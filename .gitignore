@@ -1,0 +1,73 @@
+# =========================
+# OS / Editor
+# =========================
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+.idea/
+*.iml
+
+# =========================
+# Logs
+# =========================
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# =========================
+# UI (Next.js / Node)
+# =========================
+ui/node_modules/
+ui/.next/
+ui/out/
+ui/.turbo/
+ui/.vercel/
+ui/.env.local
+ui/.env.*.local
+
+# Optional (if you create env files at ui root)
+ui/.env
+
+# =========================
+# Backend (Gradle / Java)
+# =========================
+backend/.gradle/
+backend/build/
+backend/bin/
+backend/out/
+backend/.classpath
+backend/.project
+backend/.settings/
+
+# IntelliJ / Gradle caches (if any)
+**/.gradle/
+
+# =========================
+# Java build artifacts (general)
+# =========================
+*.class
+*.jar
+*.war
+*.ear
+
+# =========================
+# Database / local files
+# =========================
+*.sqlite
+*.db
+*.db-journal
+
+# If you ever create local backup dumps
+*.sql
+*.dump
