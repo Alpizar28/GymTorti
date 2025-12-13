@@ -50,5 +50,13 @@ public class ClientController {
         return clientService.updateClient(gymId, id, request);
     }
 
+    @DeleteMapping("/{id}")
+    public void deleteClient(
+            @RequestParam Long gymId,
+            @PathVariable Long id
+    ) {
+        clientService.deleteClient(gymId, id);
+    }
+
 
 }

@@ -10,6 +10,7 @@ import {
   RefreshCw,
   Search,
   ShieldAlert,
+  Trash2,
   Users,
 } from "lucide-react";
 import { apiGet, apiSend } from "@/lib/api";
@@ -179,6 +180,18 @@ export default function ClientsPage() {
     }
   }
 
+  async function handleDelete(target: ClientResponse) {
+    const ok = window.confirm(`¿Eliminar al cliente "${target.nombre} ${target.apellido ?? ""}"?`);
+    if (!ok) return;
+    setError(null);
+    try {
+      await apiSend(`/api/clients/${target.id}?gymId=${GYM_ID}`, "DELETE");
+      await loadClients();
+    } catch (err) {
+      setError(friendlyError(err));
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="bg-gradient-to-r from-[#ff5e62] to-[#ff9966] shadow-lg">
@@ -312,10 +325,21 @@ export default function ClientsPage() {
                       <td className="px-4 py-3">{statusBadge(client.estado)}</td>
                       <td className="px-4 py-3 text-gray-700">{formatDate(client.fechaRegistro)}</td>
                       <td className="px-4 py-3 text-right">
-                        <Button variant="outline" size="sm" className="rounded-xl" onClick={() => startEdit(client)}>
-                          <NotebookPen className="mr-2 h-4 w-4" />
-                          Editar
-                        </Button>
+                        <div className="flex justify-end gap-2">
+                          <Button variant="outline" size="sm" className="rounded-xl" onClick={() => startEdit(client)}>
+                            <NotebookPen className="mr-2 h-4 w-4" />
+                            Editar
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            className="rounded-xl bg-red-500 hover:bg-red-600 text-white"
+                            onClick={() => handleDelete(client)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Eliminar
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}

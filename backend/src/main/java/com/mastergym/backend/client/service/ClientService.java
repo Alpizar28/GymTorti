@@ -66,6 +66,12 @@ public class ClientService {
         return toResponse(saved);
     }
 
+    public void deleteClient(Long gymId, Long id) {
+        ClientEntity entity = clientRepository.findByIdAndGymId(id, gymId)
+                .orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
+        clientRepository.delete(entity);
+    }
+
 
     private ClientResponse toResponse(ClientEntity e) {
         return new ClientResponse(
