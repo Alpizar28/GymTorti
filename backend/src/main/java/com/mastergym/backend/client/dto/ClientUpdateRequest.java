@@ -1,12 +1,25 @@
 package com.mastergym.backend.client.dto;
 
 import com.mastergym.backend.common.enums.ClientStatus;
+import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Size;
 
 public class ClientUpdateRequest {
+    @Size(max = 120, message = "nombre supera el máximo (120)")
     private String nombre;
+
+    @Size(max = 120, message = "apellido supera el máximo (120)")
     private String apellido;
+
+    @Size(max = 40, message = "telefono supera el máximo (40)")
     private String telefono;
+
+    @Email(message = "email inválido")
+    @Size(max = 180, message = "email supera el máximo (180)")
     private String email;
+
+    @Size(max = 500, message = "notas supera el máximo (500)")
     private String notas;
     private ClientStatus estado;
 
@@ -29,4 +42,9 @@ public class ClientUpdateRequest {
 
     public ClientStatus getEstado() { return estado; }
     public void setEstado(ClientStatus estado) { this.estado = estado; }
+
+    @AssertTrue(message = "nombre no puede ser vacío")
+    public boolean isNombreValid() {
+        return nombre == null || !nombre.trim().isBlank();
+    }
 }

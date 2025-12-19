@@ -54,6 +54,14 @@ Abrir terminal en:
 
 ```powershell
 cd .\backend
+Configurar variables (recomendado, evita credenciales hardcodeadas):
+
+```powershell
+$env:SPRING_DATASOURCE_URL="jdbc:postgresql://localhost:5432/mastergym_dev"
+$env:SPRING_DATASOURCE_USERNAME="postgres"
+$env:SPRING_DATASOURCE_PASSWORD="TU_PASSWORD"
+```
+
 Ejecutar:
 
 powershell
@@ -65,7 +73,8 @@ http://localhost:8080
 
 Prueba rápida (Thunder/Postman):
 
-GET http://localhost:8080/api/clients?gymId=1
+GET http://localhost:8080/api/clients?page=0&size=50
+Header: X-GYM-ID: 1
 
 3) Ejecutar UI (Next.js)
 Abrir OTRA terminal en:
@@ -148,3 +157,39 @@ next: 16.0.10
 react: 19.2.1
 
 typescript: 5.9.3
+
+---
+
+## Nuevas variables de entorno (recomendado)
+
+### UI (Next.js)
+Crear `ui/.env.local`:
+
+```env
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
+NEXT_PUBLIC_GYM_ID=1
+```
+
+### Backend (Spring Boot)
+Evitar credenciales hardcodeadas en el repo y usar variables:
+
+```powershell
+$env:SPRING_DATASOURCE_URL="jdbc:postgresql://localhost:5432/mastergym_dev"
+$env:SPRING_DATASOURCE_USERNAME="postgres"
+$env:SPRING_DATASOURCE_PASSWORD="TU_PASSWORD"
+$env:CORS_ALLOWED_ORIGINS="http://localhost:3000"
+```
+
+---
+
+## Pagos (API)
+
+Recordá enviar `X-GYM-ID` en cada request a `/api/**`.
+
+- `POST /api/payments`
+- `GET /api/payments?page=0&size=50&sort=paymentDate,desc`
+- `GET /api/payments?clientId=123&page=0&size=50`
+- `PUT /api/payments/{id}`
+- `DELETE /api/payments/{id}`
+
+UI: `http://localhost:3000/payments`
