@@ -98,7 +98,7 @@ export function ClienteDetailDialog({ cliente, open, onOpenChange }: ClienteDeta
                 <div>
                   <p className="text-sm text-gray-600">Fecha de Vencimiento</p>
                   <p className="text-sm font-medium text-gray-900">
-                    {new Date(cliente.fechaVencimiento).toLocaleDateString()}
+                    {cliente.fechaVencimiento ? new Date(cliente.fechaVencimiento).toLocaleDateString() : "Sin membresia"}
                   </p>
                 </div>
               </div>
@@ -130,4 +130,3 @@ export function ClienteDetailDialog({ cliente, open, onOpenChange }: ClienteDeta
     </Dialog>
   );
 }
-

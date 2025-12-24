@@ -7,6 +7,7 @@ import com.mastergym.backend.payment.enums.PaymentType;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
@@ -39,6 +40,7 @@ public class PaymentRequest {
     private String notes;
 
     @NotNull(message = "paymentDate es obligatorio")
+    @PastOrPresent(message = "paymentDate no puede ser futura")
     private LocalDate paymentDate;
 
     public PaymentRequest() {}
@@ -121,4 +123,3 @@ public class PaymentRequest {
         return trimmed.isEmpty() ? null : trimmed;
     }
 }
-

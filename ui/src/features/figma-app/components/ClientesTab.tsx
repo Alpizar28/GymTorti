@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { BarChart3, Bell, FileText, Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,17 +12,17 @@ import { ClienteDetailDialog } from "./ClienteDetailDialog";
 import { ClienteForm } from "./ClienteForm";
 import { ClienteReporteDialog } from "./ClienteReporteDialog";
 import { ImageWithFallback } from "../figma/ImageWithFallback";
-import type { Cliente, Medicion, Pago } from "../types";
+import type { Cliente, ClienteFormData, Medicion, Pago } from "../types";
 
 interface ClientesTabProps {
   clientes: Cliente[];
   allClientes: Cliente[];
   pagos: Pago[];
   mediciones: Medicion[];
-  onCreateCliente: (cliente: Omit<Cliente, "id">) => void | Promise<void>;
-  onUpdateCliente: (clienteId: string, cliente: Omit<Cliente, "id">) => void | Promise<void>;
+  onCreateCliente: (cliente: ClienteFormData) => void | Promise<void>;
+  onUpdateCliente: (clienteId: string, cliente: ClienteFormData) => void | Promise<void>;
   onDeleteCliente: (clienteId: string) => void | Promise<void>;
-  onUpdateClienteLocal: (clienteId: string, patch: Partial<Cliente>) => void;
+  onSendReminder: (clienteId: string) => void | Promise<void>;
   onRefresh: () => void | Promise<void>;
 }
 
@@ -33,9 +34,10 @@ export function ClientesTab({
   onCreateCliente,
   onUpdateCliente,
   onDeleteCliente,
-  onUpdateClienteLocal,
+  onSendReminder,
   onRefresh,
 }: ClientesTabProps) {
+  const router = useRouter();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCliente, setEditingCliente] = useState<Cliente | null>(null);
   const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null);
@@ -43,12 +45,12 @@ export function ClientesTab({
   const [reporteDialogOpen, setReporteDialogOpen] = useState(false);
   const [filter, setFilter] = useState<"todos" | "activos" | "vencidos" | "por-vencer">("todos");
 
-  const handleAddCliente = async (cliente: Omit<Cliente, "id">) => {
+  const handleAddCliente = async (cliente: ClienteFormData) => {
     await onCreateCliente(cliente);
     setDialogOpen(false);
   };
 
-  const handleEditCliente = async (cliente: Omit<Cliente, "id">) => {
+  const handleEditCliente = async (cliente: ClienteFormData) => {
     if (!editingCliente) return;
     await onUpdateCliente(editingCliente.id, cliente);
     setEditingCliente(null);
@@ -61,25 +63,15 @@ export function ClientesTab({
     }
   };
 
-  const handleRenovarMembresia = (clienteId: string) => {
+  const handleEnviarRecordatorio = async (clienteId: string) => {
     const cliente = allClientes.find((c) => c.id === clienteId);
     if (!cliente) return;
-
-    const mesesMap = { mensual: 1, trimestral: 3, semestral: 6, anual: 12 };
-    const hoy = new Date();
-    const vencimientoActual = new Date(cliente.fechaVencimiento);
-    const fechaBase = vencimientoActual > hoy ? vencimientoActual : hoy;
-    const nuevaFechaVencimiento = new Date(fechaBase);
-    nuevaFechaVencimiento.setMonth(nuevaFechaVencimiento.getMonth() + mesesMap[cliente.tipoMembresia]);
-
-    onUpdateClienteLocal(clienteId, { fechaVencimiento: nuevaFechaVencimiento.toISOString().split("T")[0], estado: "activo" });
-    alert("Membresía renovada exitosamente");
-  };
-
-  const handleEnviarRecordatorio = (clienteId: string) => {
-    const cliente = allClientes.find((c) => c.id === clienteId);
-    if (!cliente) return;
-    alert(`Recordatorio enviado a ${cliente.nombre} ${cliente.apellido}\nTeléfono: ${cliente.telefono}\nCorreo: ${cliente.email}`);
+    try {
+      await onSendReminder(clienteId);
+      alert(`Recordatorio enviado a ${cliente.nombre} ${cliente.apellido}\nTeléfono: ${cliente.telefono}\nCorreo: ${cliente.email}`);
+    } catch {
+      // Error is surfaced by the global error banner.
+    }
   };
 
   const openEditDialog = (cliente: Cliente) => {
@@ -98,6 +90,9 @@ export function ClientesTab({
   };
 
   const getEstadoBadge = (estado: Cliente["estado"], fechaVencimiento: string) => {
+    if (!fechaVencimiento) {
+      return <Badge variant="secondary">Inactivo</Badge>;
+    }
     const vencimiento = new Date(fechaVencimiento);
     const hoy = new Date();
     const diasParaVencer = Math.ceil((vencimiento.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
@@ -267,7 +262,10 @@ export function ClientesTab({
                           <Badge variant="outline" className="capitalize">
                             {cliente.tipoMembresia}
                           </Badge>
-                          <p className="text-sm text-gray-600">Vence: {new Date(cliente.fechaVencimiento).toLocaleDateString("es-CR")}</p>
+                          <p className="text-sm text-gray-600">
+                            Vence:{" "}
+                            {cliente.fechaVencimiento ? new Date(cliente.fechaVencimiento).toLocaleDateString("es-CR") : "Sin membresia"}
+                          </p>
                         </div>
                       </TableCell>
                       <TableCell>{getEstadoBadge(cliente.estado, cliente.fechaVencimiento)}</TableCell>
@@ -276,8 +274,9 @@ export function ClientesTab({
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleRenovarMembresia(cliente.id)}
-                            className="rounded-xl text-green-600 hover:bg-green-50 hover:text-green-700"
+                            onClick={() => router.push("/dashboard?tab=pagos")}
+                            className="rounded-xl text-red-600 hover:bg-red-50 hover:text-red-700"
+                            aria-label="Renovar membresia"
                           >
                             <RefreshCw className="h-4 w-4" />
                           </Button>
@@ -364,4 +363,3 @@ function UsersIcon() {
     </svg>
   );
 }
-

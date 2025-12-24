@@ -14,12 +14,12 @@ interface PagoFormProps {
   onSubmit: (data: Omit<Pago, "id">) => void;
   onCancel: () => void;
   clientes: Cliente[];
-  onUpdateCliente: (clienteId: string, patch: Partial<Cliente>) => void;
 }
 
 const colones = new Intl.NumberFormat("es-CR", { style: "currency", currency: "CRC", maximumFractionDigits: 0 });
 
-export function PagoForm({ onSubmit, onCancel, clientes, onUpdateCliente }: PagoFormProps) {
+export function PagoForm({ onSubmit, onCancel, clientes }: PagoFormProps) {
+  const today = new Date().toISOString().split("T")[0];
   const { register, handleSubmit, setValue, watch, formState } = useForm<Omit<Pago, "id">>({
     defaultValues: {
       clienteId: "",
@@ -37,9 +37,9 @@ export function PagoForm({ onSubmit, onCancel, clientes, onUpdateCliente }: Pago
   const { errors } = formState;
 
   const [clienteSeleccionado, setClienteSeleccionado] = useState<Cliente | null>(null);
-  const [nuevaFechaVencimiento, setNuevaFechaVencimiento] = useState<string>("");
 
   const montosRecomendados: Record<string, number> = {
+    diario: 1000,
     mensual: 12500,
     trimestral: 35000,
     semestral: 65000,
@@ -47,34 +47,19 @@ export function PagoForm({ onSubmit, onCancel, clientes, onUpdateCliente }: Pago
   };
 
   useEffect(() => {
+    setValue("fecha", today);
     if (!clienteId) {
       setClienteSeleccionado(null);
-      setNuevaFechaVencimiento("");
       return;
     }
     const cliente = clientes.find((c) => c.id === clienteId);
     setClienteSeleccionado(cliente || null);
-    if (cliente) calcularNuevaFechaVencimiento(cliente, tipoPago);
-  }, [clienteId, tipoPago, clientes]);
-
-  const calcularNuevaFechaVencimiento = (cliente: Cliente, tipo: string) => {
-    const mesesMap = { mensual: 1, trimestral: 3, semestral: 6, anual: 12 };
-    const hoy = new Date();
-    const vencimientoActual = new Date(cliente.fechaVencimiento);
-    const fechaBase = vencimientoActual > hoy ? vencimientoActual : hoy;
-    const nuevaFecha = new Date(fechaBase);
-    nuevaFecha.setMonth(nuevaFecha.getMonth() + mesesMap[tipo as keyof typeof mesesMap]);
-    setNuevaFechaVencimiento(nuevaFecha.toISOString().split("T")[0]);
-  };
+  }, [clienteId, clientes, setValue, today]);
 
   const handleFormSubmit = (data: Omit<Pago, "id">) => {
     if (!clienteSeleccionado) return;
-    onUpdateCliente(clienteId, { fechaVencimiento: nuevaFechaVencimiento, estado: "activo" });
-    onSubmit({
-      ...data,
-      fechaVencimientoAnterior: clienteSeleccionado.fechaVencimiento,
-      fechaVencimientoNueva: nuevaFechaVencimiento,
-    });
+    const monto = montosRecomendados[tipoPago] ?? 0;
+    onSubmit({ ...data, monto });
   };
 
   const getEstadoBadge = (estado: Cliente["estado"]) => {
@@ -100,7 +85,6 @@ export function PagoForm({ onSubmit, onCancel, clientes, onUpdateCliente }: Pago
           </SelectTrigger>
           <SelectContent>
             {clientes
-              .filter((c) => c.estado !== "inactivo")
               .slice()
               .sort((a, b) => {
                 if (a.estado === "vencido" && b.estado !== "vencido") return -1;
@@ -129,11 +113,13 @@ export function PagoForm({ onSubmit, onCancel, clientes, onUpdateCliente }: Pago
             <div className="text-right">
               <p className="text-sm text-gray-600">Vence el</p>
               <p className="font-bold text-gray-900">
-                {new Date(clienteSeleccionado.fechaVencimiento).toLocaleDateString("es-CR", {
-                  day: "2-digit",
-                  month: "short",
-                  year: "numeric",
-                })}
+                {clienteSeleccionado.fechaVencimiento
+                  ? new Date(clienteSeleccionado.fechaVencimiento).toLocaleDateString("es-CR", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })
+                  : "Sin membresia"}
               </p>
             </div>
           </div>
@@ -152,7 +138,16 @@ export function PagoForm({ onSubmit, onCancel, clientes, onUpdateCliente }: Pago
 
       <div className="space-y-2">
         <Label htmlFor="fecha">Fecha del Pago *</Label>
-        <Input id="fecha" type="date" {...register("fecha", { required: "La fecha es requerida" })} className="rounded-xl" />
+        <Input
+          id="fecha"
+          type="date"
+          max={today}
+          {...register("fecha", {
+            required: "La fecha es requerida",
+            validate: (value) => (value <= today ? true : "La fecha no puede ser futura"),
+          })}
+          className="rounded-xl"
+        />
         {errors.fecha && <p className="text-sm text-red-600">{errors.fecha.message}</p>}
       </div>
 
@@ -169,6 +164,7 @@ export function PagoForm({ onSubmit, onCancel, clientes, onUpdateCliente }: Pago
             <SelectValue placeholder="Selecciona el tipo" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="diario">Diario (1 día) - {colones.format(1000)}</SelectItem>
             <SelectItem value="mensual">Mensual (1 mes) - {colones.format(12500)}</SelectItem>
             <SelectItem value="trimestral">Trimestral (3 meses) - {colones.format(35000)}</SelectItem>
             <SelectItem value="semestral">Semestral (6 meses) - {colones.format(65000)}</SelectItem>
@@ -176,17 +172,11 @@ export function PagoForm({ onSubmit, onCancel, clientes, onUpdateCliente }: Pago
           </SelectContent>
         </Select>
       </div>
-
       <div className="space-y-2">
-        <Label htmlFor="monto">Monto *</Label>
-        <Input
-          id="monto"
-          type="number"
-          step="0.01"
-          {...register("monto", { required: "El monto es requerido", min: { value: 1, message: "Debe ser mayor a 0" } })}
-          className="rounded-xl"
-        />
-        {errors.monto && <p className="text-sm text-red-600">{errors.monto.message}</p>}
+        <Label>Monto</Label>
+        <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-900">
+          {colones.format(montosRecomendados[tipoPago] ?? 0)}
+        </div>
       </div>
 
       <div className="space-y-2">
@@ -208,13 +198,6 @@ export function PagoForm({ onSubmit, onCancel, clientes, onUpdateCliente }: Pago
         <Input id="referencia" {...register("referencia")} placeholder="Número de referencia" className="rounded-xl" />
       </div>
 
-      {clienteSeleccionado && nuevaFechaVencimiento && (
-        <div className="rounded-2xl bg-gray-50 p-4">
-          <p className="text-sm text-gray-600">Nueva fecha de vencimiento</p>
-          <p className="text-xl font-black text-gray-900">{new Date(nuevaFechaVencimiento).toLocaleDateString("es-CR")}</p>
-        </div>
-      )}
-
       <div className="flex justify-end gap-3 border-t pt-4">
         <Button type="button" variant="outline" onClick={onCancel} className="rounded-xl">
           Cancelar
@@ -226,4 +209,3 @@ export function PagoForm({ onSubmit, onCancel, clientes, onUpdateCliente }: Pago
     </form>
   );
 }
-

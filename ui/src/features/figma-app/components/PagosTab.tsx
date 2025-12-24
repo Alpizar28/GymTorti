@@ -16,12 +16,11 @@ interface PagosTabProps {
   onCreatePago: (pago: Omit<Pago, "id">) => void | Promise<void>;
   onDeletePago: (id: string) => void | Promise<void>;
   clientes: Cliente[];
-  onUpdateCliente: (clienteId: string, patch: Partial<Cliente>) => void;
 }
 
 const colones = new Intl.NumberFormat("es-CR", { style: "currency", currency: "CRC", maximumFractionDigits: 0 });
 
-export function PagosTab({ pagos, onCreatePago, onDeletePago, clientes, onUpdateCliente }: PagosTabProps) {
+export function PagosTab({ pagos, onCreatePago, onDeletePago, clientes }: PagosTabProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const handleAddPago = async (pago: Omit<Pago, "id">) => {
@@ -89,6 +88,8 @@ export function PagosTab({ pagos, onCreatePago, onDeletePago, clientes, onUpdate
 
   const getTipoPagoBadgeClass = (tipo: string) => {
     switch (tipo) {
+      case "diario":
+        return "bg-gray-100 text-gray-900 border-gray-200";
       case "mensual":
         return "bg-blue-100 text-blue-900 border-blue-200";
       case "trimestral":
@@ -197,7 +198,7 @@ export function PagosTab({ pagos, onCreatePago, onDeletePago, clientes, onUpdate
                     <DialogTitle className="text-2xl">Nuevo Pago</DialogTitle>
                     <DialogDescription>Registra un nuevo pago de membresía</DialogDescription>
                   </DialogHeader>
-                  <PagoForm onSubmit={handleAddPago} onCancel={() => setDialogOpen(false)} clientes={clientes} onUpdateCliente={onUpdateCliente} />
+                  <PagoForm onSubmit={handleAddPago} onCancel={() => setDialogOpen(false)} clientes={clientes} />
                 </DialogContent>
               </Dialog>
             </div>
@@ -267,4 +268,3 @@ export function PagosTab({ pagos, onCreatePago, onDeletePago, clientes, onUpdate
     </div>
   );
 }
-

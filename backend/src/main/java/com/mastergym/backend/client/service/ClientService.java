@@ -4,6 +4,7 @@ import com.mastergym.backend.client.dto.ClientRequest;
 import com.mastergym.backend.client.dto.ClientResponse;
 import com.mastergym.backend.client.model.ClientEntity;
 import com.mastergym.backend.client.repository.ClientRepository;
+import com.mastergym.backend.common.enums.ClientStatus;
 import com.mastergym.backend.common.error.BadRequestException;
 import com.mastergym.backend.common.error.NotFoundException;
 import com.mastergym.backend.common.gym.GymContext;
@@ -14,6 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
+import java.time.LocalDate;
 
 @Service
 public class ClientService {
@@ -36,26 +38,26 @@ public class ClientService {
         );
 
         ClientEntity saved = clientRepository.save(entity);
-        return toResponse(saved);
+        return toResponse(refreshStatus(saved));
     }
 
     public Page<ClientResponse> listClients(String search, Pageable pageable) {
         Long gymId = GymContext.requireGymId();
         Specification<ClientEntity> spec = specFor(gymId, search);
-        return clientRepository.findAll(spec, pageable).map(this::toResponse);
+        return clientRepository.findAll(spec, pageable).map(entity -> toResponse(refreshStatus(entity)));
     }
 
     // Mantener para posibles usos internos sin paginación
     public List<ClientResponse> listClients(Long gymId, String search) {
         Specification<ClientEntity> spec = specFor(gymId, search);
-        return clientRepository.findAll(spec).stream().map(this::toResponse).toList();
+        return clientRepository.findAll(spec).stream().map(entity -> toResponse(refreshStatus(entity))).toList();
     }
 
     public ClientResponse getClientById(Long id) {
         Long gymId = GymContext.requireGymId();
         ClientEntity entity = clientRepository.findByIdAndGymId(id, gymId)
                 .orElseThrow(() -> new NotFoundException("Cliente no encontrado"));
-        return toResponse(entity);
+        return toResponse(refreshStatus(entity));
     }
 
     public ClientResponse updateClient(Long id, ClientUpdateRequest request) {
@@ -72,10 +74,9 @@ public class ClientService {
         if (request.getTelefono() != null) entity.setTelefono(blankToNull(request.getTelefono()));
         if (request.getEmail() != null) entity.setEmail(blankToNull(request.getEmail()));
         if (request.getNotas() != null) entity.setNotas(blankToNull(request.getNotas()));
-        if (request.getEstado() != null) entity.setEstado(request.getEstado());
 
         ClientEntity saved = clientRepository.save(entity);
-        return toResponse(saved);
+        return toResponse(refreshStatus(saved));
     }
 
     public void deleteClient(Long id) {
@@ -115,8 +116,32 @@ public class ClientService {
                 e.getEmail(),
                 e.getEstado(),
                 e.getFechaRegistro(),
+                e.getFechaInicioMembresia(),
+                e.getFechaVencimiento(),
                 e.getNotas()
         );
+    }
+
+    private ClientEntity refreshStatus(ClientEntity entity) {
+        LocalDate vencimiento = entity.getFechaVencimiento();
+        LocalDate inicio = entity.getFechaInicioMembresia();
+        LocalDate today = LocalDate.now();
+        ClientStatus nextStatus;
+        if (vencimiento == null) {
+            nextStatus = ClientStatus.INACTIVO;
+        } else if (inicio != null && today.isBefore(inicio)) {
+            nextStatus = ClientStatus.INACTIVO;
+        } else if (vencimiento.isBefore(today)) {
+            nextStatus = ClientStatus.MOROSO;
+        } else {
+            nextStatus = ClientStatus.ACTIVO;
+        }
+
+        if (entity.getEstado() != nextStatus) {
+            entity.setEstado(nextStatus);
+            return clientRepository.save(entity);
+        }
+        return entity;
     }
 
     private static String blankToNull(String value) {

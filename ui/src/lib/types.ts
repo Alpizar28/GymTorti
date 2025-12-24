@@ -10,7 +10,15 @@ export type Page<T> = {
 
 export type PaymentCurrency = "CRC" | "USD";
 export type PaymentMethod = "CASH" | "SINPE" | "CARD" | "TRANSFER" | "OTHER";
-export type PaymentType = "MONTHLY_MEMBERSHIP" | "REGISTRATION" | "PENALTY" | "OTHER";
+export type PaymentType =
+  | "DAILY_MEMBERSHIP"
+  | "MONTHLY_MEMBERSHIP"
+  | "QUARTERLY_MEMBERSHIP"
+  | "SEMESTER_MEMBERSHIP"
+  | "ANNUAL_MEMBERSHIP"
+  | "REGISTRATION"
+  | "PENALTY"
+  | "OTHER";
 export type PaymentStatus = "PAID" | "PENDING" | "CANCELLED" | "REFUNDED";
 
 export type PaymentResponse = {
@@ -62,6 +70,8 @@ export type ClientResponse = {
   email?: string | null;
   estado: ClientStatus;
   fechaRegistro: string;
+  fechaInicioMembresia?: string | null;
+  fechaVencimiento?: string | null;
   notas?: string | null;
 };
 

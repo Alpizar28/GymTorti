@@ -57,7 +57,9 @@ export function ClienteReporteDialog({ cliente, open, onOpenChange, pagos, medic
     reporte += `MEMBRESÍA\n`;
     reporte += `Tipo: ${cliente.tipoMembresia}\n`;
     reporte += `Fecha inicio: ${new Date(cliente.fechaInicio).toLocaleDateString("es-CR")}\n`;
-    reporte += `Fecha vencimiento: ${new Date(cliente.fechaVencimiento).toLocaleDateString("es-CR")}\n\n`;
+    reporte += `Fecha vencimiento: ${
+      cliente.fechaVencimiento ? new Date(cliente.fechaVencimiento).toLocaleDateString("es-CR") : "Sin membresia"
+    }\n\n`;
 
     if (cliente.contactoEmergencia) {
       reporte += `CONTACTO DE EMERGENCIA\n`;
@@ -192,7 +194,9 @@ export function ClienteReporteDialog({ cliente, open, onOpenChange, pagos, medic
                 <div>
                   <p className="text-xs text-gray-600">Vencimiento</p>
                   <p className="font-semibold text-gray-900">
-                    {new Date(cliente.fechaVencimiento).toLocaleDateString("es-CR", { day: "2-digit", month: "long", year: "numeric" })}
+                    {cliente.fechaVencimiento
+                      ? new Date(cliente.fechaVencimiento).toLocaleDateString("es-CR", { day: "2-digit", month: "long", year: "numeric" })
+                      : "Sin membresia"}
                   </p>
                 </div>
               </CardContent>
@@ -282,4 +286,3 @@ export function ClienteReporteDialog({ cliente, open, onOpenChange, pagos, medic
     </Dialog>
   );
 }
-

@@ -2,6 +2,7 @@ package com.mastergym.backend.client.dto;
 
 import com.mastergym.backend.common.enums.ClientStatus;
 
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 public class ClientResponse {
@@ -14,6 +15,8 @@ public class ClientResponse {
     private String email;
     private ClientStatus estado;
     private OffsetDateTime fechaRegistro;
+    private LocalDate fechaInicioMembresia;
+    private LocalDate fechaVencimiento;
     private String notas;
 
     public ClientResponse() {
@@ -22,7 +25,7 @@ public class ClientResponse {
     public ClientResponse(Long id, Long gymId, String nombre, String apellido,
                           String telefono, String email,
                           ClientStatus estado, OffsetDateTime fechaRegistro,
-                          String notas) {
+                          LocalDate fechaInicioMembresia, LocalDate fechaVencimiento, String notas) {
         this.id = id;
         this.gymId = gymId;
         this.nombre = nombre;
@@ -31,6 +34,8 @@ public class ClientResponse {
         this.email = email;
         this.estado = estado;
         this.fechaRegistro = fechaRegistro;
+        this.fechaInicioMembresia = fechaInicioMembresia;
+        this.fechaVencimiento = fechaVencimiento;
         this.notas = notas;
     }
 
@@ -64,6 +69,14 @@ public class ClientResponse {
 
     public OffsetDateTime getFechaRegistro() {
         return fechaRegistro;
+    }
+
+    public LocalDate getFechaInicioMembresia() {
+        return fechaInicioMembresia;
+    }
+
+    public LocalDate getFechaVencimiento() {
+        return fechaVencimiento;
     }
 
     public String getNotas() {
@@ -100,6 +113,14 @@ public class ClientResponse {
 
     public void setFechaRegistro(OffsetDateTime fechaRegistro) {
         this.fechaRegistro = fechaRegistro;
+    }
+
+    public void setFechaInicioMembresia(LocalDate fechaInicioMembresia) {
+        this.fechaInicioMembresia = fechaInicioMembresia;
+    }
+
+    public void setFechaVencimiento(LocalDate fechaVencimiento) {
+        this.fechaVencimiento = fechaVencimiento;
     }
 
     public void setNotas(String notas) {

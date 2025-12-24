@@ -2,6 +2,7 @@ package com.mastergym.backend.client.controller;
 
 import com.mastergym.backend.client.dto.ClientRequest;
 import com.mastergym.backend.client.dto.ClientResponse;
+import com.mastergym.backend.client.service.ClientReminderService;
 import com.mastergym.backend.client.service.ClientService;
 import com.mastergym.backend.common.error.BadRequestException;
 import jakarta.validation.Valid;
@@ -19,9 +20,11 @@ import com.mastergym.backend.client.dto.ClientUpdateRequest;
 public class ClientController {
 
     private final ClientService clientService;
+    private final ClientReminderService clientReminderService;
 
-    public ClientController(ClientService clientService) {
+    public ClientController(ClientService clientService, ClientReminderService clientReminderService) {
         this.clientService = clientService;
+        this.clientReminderService = clientReminderService;
     }
 
     @PostMapping
@@ -60,6 +63,12 @@ public class ClientController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteClient(@PathVariable Long id) {
         clientService.deleteClient(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/reminder")
+    public ResponseEntity<Void> sendReminder(@PathVariable Long id) {
+        clientReminderService.sendReminder(id);
         return ResponseEntity.noContent().build();
     }
 

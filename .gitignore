@@ -49,6 +49,7 @@ backend/out/
 backend/.classpath
 backend/.project
 backend/.settings/
+backend/.env
 
 # IntelliJ / Gradle caches (if any)
 **/.gradle/

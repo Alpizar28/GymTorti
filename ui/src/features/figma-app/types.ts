@@ -7,18 +7,20 @@ export interface Cliente {
   fechaInicio: string;
   fechaVencimiento: string;
   estado: "activo" | "vencido" | "por-vencer" | "inactivo";
-  tipoMembresia: "mensual" | "trimestral" | "semestral" | "anual";
+  tipoMembresia: "diario" | "mensual" | "trimestral" | "semestral" | "anual";
   foto?: string;
   contactoEmergencia?: string;
   observaciones?: string;
 }
+
+export type ClienteFormData = Pick<Cliente, "nombre" | "apellido" | "email" | "telefono" | "foto" | "contactoEmergencia" | "observaciones">;
 
 export interface Pago {
   id: string;
   clienteId: string;
   monto: number;
   fecha: string;
-  tipoPago: "mensual" | "trimestral" | "semestral" | "anual";
+  tipoPago: "diario" | "mensual" | "trimestral" | "semestral" | "anual";
   metodoPago: "efectivo" | "tarjeta" | "sinpe";
   referencia?: string;
   fechaVencimientoAnterior?: string;
@@ -41,4 +43,3 @@ export interface Medicion {
   grasaCorporal?: number;
   notas?: string;
 }
-

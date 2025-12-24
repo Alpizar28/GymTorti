@@ -2,6 +2,7 @@ package com.mastergym.backend.client.model;
 
 import com.mastergym.backend.common.enums.ClientStatus;
 import jakarta.persistence.*;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
 @Entity
@@ -24,10 +25,16 @@ public class ClientEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private ClientStatus estado = ClientStatus.ACTIVO;
+    private ClientStatus estado = ClientStatus.INACTIVO;
 
     @Column(name = "fecha_registro", nullable = false)
     private OffsetDateTime fechaRegistro = OffsetDateTime.now();
+
+    @Column(name = "fecha_inicio_membresia")
+    private LocalDate fechaInicioMembresia;
+
+    @Column(name = "fecha_vencimiento")
+    private LocalDate fechaVencimiento;
 
     private String notas;
 
@@ -42,7 +49,7 @@ public class ClientEntity {
         this.telefono = telefono;
         this.email = email;
         this.notas = notas;
-        this.estado = ClientStatus.ACTIVO;
+        this.estado = ClientStatus.INACTIVO;
         this.fechaRegistro = OffsetDateTime.now();
     }
 
@@ -106,6 +113,22 @@ public class ClientEntity {
 
     public void setFechaRegistro(OffsetDateTime fechaRegistro) {
         this.fechaRegistro = fechaRegistro;
+    }
+
+    public LocalDate getFechaInicioMembresia() {
+        return fechaInicioMembresia;
+    }
+
+    public void setFechaInicioMembresia(LocalDate fechaInicioMembresia) {
+        this.fechaInicioMembresia = fechaInicioMembresia;
+    }
+
+    public LocalDate getFechaVencimiento() {
+        return fechaVencimiento;
+    }
+
+    public void setFechaVencimiento(LocalDate fechaVencimiento) {
+        this.fechaVencimiento = fechaVencimiento;
     }
 
     public String getNotas() {

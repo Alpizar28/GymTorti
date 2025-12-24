@@ -2,20 +2,29 @@ package com.mastergym.backend.payment.service;
 
 import com.mastergym.backend.client.model.ClientEntity;
 import com.mastergym.backend.client.repository.ClientRepository;
+import com.mastergym.backend.common.enums.ClientStatus;
 import com.mastergym.backend.common.error.BadRequestException;
 import com.mastergym.backend.common.error.NotFoundException;
 import com.mastergym.backend.common.gym.GymContext;
 import com.mastergym.backend.payment.dto.PaymentRequest;
 import com.mastergym.backend.payment.dto.PaymentResponse;
 import com.mastergym.backend.payment.dto.PaymentUpdateRequest;
+import com.mastergym.backend.payment.enums.PaymentStatus;
+import com.mastergym.backend.payment.enums.PaymentType;
 import com.mastergym.backend.payment.model.PaymentEntity;
 import com.mastergym.backend.payment.repository.PaymentRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.time.LocalDate;
+import java.time.Period;
+import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 public class PaymentService {
@@ -28,6 +37,7 @@ public class PaymentService {
         this.clientRepository = clientRepository;
     }
 
+    @Transactional
     public PaymentResponse create(PaymentRequest request) {
         Long gymId = GymContext.requireGymId();
         ClientEntity client = clientRepository.findByIdAndGymId(request.getClientId(), gymId)
@@ -47,6 +57,7 @@ public class PaymentService {
         );
 
         PaymentEntity saved = paymentRepository.save(entity);
+        applyMembershipRenewalIfNeeded(client, saved, request.getNotes());
         return toResponse(saved);
     }
 
@@ -117,6 +128,58 @@ public class PaymentService {
         );
     }
 
+    private void applyMembershipRenewalIfNeeded(ClientEntity client, PaymentEntity payment, String notes) {
+        if (payment.getStatus() != PaymentStatus.PAID) return;
+        Period extension = resolveMembershipExtension(payment.getPaymentType(), notes);
+        if (extension == null) return;
+
+        LocalDate today = LocalDate.now();
+        LocalDate paymentDate = payment.getPaymentDate() != null ? payment.getPaymentDate() : today;
+        LocalDate current = client.getFechaVencimiento();
+        LocalDate base = (current != null && !current.isBefore(paymentDate)) ? current : paymentDate;
+        LocalDate nuevaFecha = base.plus(extension);
+
+        if (paymentDate.isAfter(today) || current == null || current.isBefore(paymentDate)) {
+            client.setFechaInicioMembresia(paymentDate);
+        }
+        client.setFechaVencimiento(nuevaFecha);
+        client.setEstado(resolveStatus(client, today));
+        clientRepository.save(client);
+    }
+
+    private ClientStatus resolveStatus(ClientEntity client, LocalDate today) {
+        LocalDate inicio = client.getFechaInicioMembresia();
+        LocalDate vencimiento = client.getFechaVencimiento();
+        if (vencimiento == null) return ClientStatus.INACTIVO;
+        if (inicio != null && today.isBefore(inicio)) return ClientStatus.INACTIVO;
+        if (vencimiento.isBefore(today)) return ClientStatus.MOROSO;
+        return ClientStatus.ACTIVO;
+    }
+
+    private static final Pattern TIPO_PAGO_PATTERN = Pattern.compile("tipoPago:\\s*(\\w+)", Pattern.CASE_INSENSITIVE);
+
+    private Period resolveMembershipExtension(PaymentType type, String notes) {
+        if (type == PaymentType.DAILY_MEMBERSHIP) return Period.ofDays(1);
+        if (type == PaymentType.MONTHLY_MEMBERSHIP) return Period.ofMonths(1);
+        if (type == PaymentType.QUARTERLY_MEMBERSHIP) return Period.ofMonths(3);
+        if (type == PaymentType.SEMESTER_MEMBERSHIP) return Period.ofMonths(6);
+        if (type == PaymentType.ANNUAL_MEMBERSHIP) return Period.ofMonths(12);
+
+        if (notes == null || notes.isBlank()) return null;
+        Matcher matcher = TIPO_PAGO_PATTERN.matcher(notes);
+        if (!matcher.find()) return null;
+
+        String raw = matcher.group(1).toLowerCase(Locale.ROOT);
+        return switch (raw) {
+            case "diario" -> Period.ofDays(1);
+            case "mensual" -> Period.ofMonths(1);
+            case "trimestral" -> Period.ofMonths(3);
+            case "semestral" -> Period.ofMonths(6);
+            case "anual" -> Period.ofMonths(12);
+            default -> null;
+        };
+    }
+
     private static Specification<PaymentEntity> specFor(Long gymId, Long clientId, String search) {
         return (root, query, cb) -> {
             var predicates = new ArrayList<jakarta.persistence.criteria.Predicate>();
@@ -144,4 +207,3 @@ public class PaymentService {
         return trimmed.isEmpty() ? null : trimmed;
     }
 }
-
