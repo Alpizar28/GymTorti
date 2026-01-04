@@ -1,6 +1,7 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useEffect, useRef } from "react";
+import { useForm, useWatch } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,10 +12,11 @@ interface MedicionFormProps {
   onSubmit: (data: Omit<Medicion, "id">) => void;
   onCancel: () => void;
   clientes: Cliente[];
+  mediciones: Medicion[];
 }
 
-export function MedicionForm({ onSubmit, onCancel, clientes }: MedicionFormProps) {
-  const { register, handleSubmit, setValue, watch, formState } = useForm<Omit<Medicion, "id">>({
+export function MedicionForm({ onSubmit, onCancel, clientes, mediciones }: MedicionFormProps) {
+  const { register, handleSubmit, setValue, control, formState } = useForm<Omit<Medicion, "id">>({
     defaultValues: {
       clienteId: "",
       fecha: new Date().toISOString().split("T")[0],
@@ -31,8 +33,33 @@ export function MedicionForm({ onSubmit, onCancel, clientes }: MedicionFormProps
     },
   });
 
-  const clienteId = watch("clienteId");
+  const clienteId = useWatch({ control, name: "clienteId" });
+  const prefilledForRef = useRef<string | null>(null);
   const { errors } = formState;
+
+  useEffect(() => {
+    if (!clienteId || prefilledForRef.current === clienteId) return;
+    const latest = mediciones
+      .filter((m) => m.clienteId === clienteId)
+      .slice()
+      .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())[0];
+    if (!latest) {
+      prefilledForRef.current = clienteId;
+      return;
+    }
+
+    setValue("peso", latest.peso);
+    setValue("altura", latest.altura);
+    setValue("pechoCm", latest.pechoCm);
+    setValue("cinturaCm", latest.cinturaCm);
+    setValue("caderaCm", latest.caderaCm);
+    setValue("brazoIzqCm", latest.brazoIzqCm);
+    setValue("brazoDerCm", latest.brazoDerCm);
+    setValue("piernaIzqCm", latest.piernaIzqCm);
+    setValue("piernaDerCm", latest.piernaDerCm);
+    setValue("grasaCorporal", latest.grasaCorporal ?? undefined);
+    prefilledForRef.current = clienteId;
+  }, [clienteId, mediciones, setValue]);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -162,4 +189,3 @@ export function MedicionForm({ onSubmit, onCancel, clientes }: MedicionFormProps
     </form>
   );
 }
-

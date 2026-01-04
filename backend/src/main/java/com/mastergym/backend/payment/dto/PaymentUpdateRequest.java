@@ -6,13 +6,15 @@ import com.mastergym.backend.payment.enums.PaymentStatus;
 import com.mastergym.backend.payment.enums.PaymentType;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public class PaymentUpdateRequest {
-
+    @Positive(message = "clientId debe ser mayor a 0")
     private Long clientId;
 
     @DecimalMin(value = "0.01", message = "amount debe ser mayor a 0")
@@ -29,7 +31,7 @@ public class PaymentUpdateRequest {
 
     @Size(max = 1000, message = "notes supera el máximo (1000)")
     private String notes;
-
+    @PastOrPresent(message = "paymentDate no puede ser futura")
     private LocalDate paymentDate;
 
     public PaymentUpdateRequest() {}
@@ -87,7 +89,7 @@ public class PaymentUpdateRequest {
     }
 
     public void setReference(String reference) {
-        this.reference = reference;
+        this.reference = blankToNull(reference);
     }
 
     public String getNotes() {
@@ -95,7 +97,7 @@ public class PaymentUpdateRequest {
     }
 
     public void setNotes(String notes) {
-        this.notes = notes;
+        this.notes = blankToNull(notes);
     }
 
     public LocalDate getPaymentDate() {
@@ -104,6 +106,12 @@ public class PaymentUpdateRequest {
 
     public void setPaymentDate(LocalDate paymentDate) {
         this.paymentDate = paymentDate;
+    }
+
+    private static String blankToNull(String value) {
+        if (value == null) return null;
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }
 

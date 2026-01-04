@@ -32,6 +32,11 @@ $localHost = [Environment]::GetEnvironmentVariable("LOCAL_PG_HOST", "Process")
 $localPort = [Environment]::GetEnvironmentVariable("LOCAL_PG_PORT", "Process")
 $neonUrl = [Environment]::GetEnvironmentVariable("NEON_DATABASE_URL", "Process")
 $pgBin = [Environment]::GetEnvironmentVariable("PG_BIN", "Process")
+$localBackupDir = [Environment]::GetEnvironmentVariable("BACKUP_LOCAL_DIR", "Process")
+
+if (-not $localBackupDir) {
+  $localBackupDir = Join-Path $backendRoot "backups"
+}
 
 if (-not $localDb -or -not $localUser -or -not $localPassword -or -not $localHost -or -not $localPort -or -not $neonUrl) {
   throw "Missing required env vars. Set LOCAL_PG_DB, LOCAL_PG_USER, LOCAL_PG_PASSWORD, LOCAL_PG_HOST, LOCAL_PG_PORT, NEON_DATABASE_URL in backend/.env."
@@ -66,15 +71,21 @@ if (-not $pgDump -or -not $pgRestore) {
 }
 
 $dumpPath = Join-Path $scriptRoot "backup_mastergym.dump"
+$timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+$localCopyPath = Join-Path $localBackupDir ("backup_{0}_{1}.dump" -f $localDb, $timestamp)
 $maxTries = 10
 $delaySeconds = 300
 
 [Environment]::SetEnvironmentVariable("PGPASSWORD", $localPassword, "Process")
+New-Item -ItemType Directory -Force -Path $localBackupDir | Out-Null
 
 for ($i = 1; $i -le $maxTries; $i++) {
   try {
     Write-Host "Backup attempt $i of $maxTries..."
     & $pgDump -h $localHost -p $localPort -U $localUser -Fc -f $dumpPath $localDb
+    if (-not (Test-Path $localCopyPath)) {
+      Copy-Item $dumpPath $localCopyPath -Force
+    }
     & $pgRestore --clean --if-exists --no-owner --no-privileges -d $neonUrl $dumpPath
     Write-Host "Backup completed."
     break

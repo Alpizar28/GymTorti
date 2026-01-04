@@ -74,7 +74,7 @@ http://localhost:8080
 Prueba rápida (Thunder/Postman):
 
 GET http://localhost:8080/api/clients?page=0&size=50
-Header: X-GYM-ID: 1
+Header: Authorization: Bearer <TOKEN>
 
 3) Ejecutar UI (Next.js)
 Abrir OTRA terminal en:
@@ -167,7 +167,6 @@ Crear `ui/.env.local`:
 
 ```env
 NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
-NEXT_PUBLIC_GYM_ID=1
 ```
 
 ### Backend (Spring Boot)
@@ -184,7 +183,7 @@ $env:CORS_ALLOWED_ORIGINS="http://localhost:3000"
 
 ## Pagos (API)
 
-Recordá enviar `X-GYM-ID` en cada request a `/api/**`.
+Recorda enviar `Authorization: Bearer <TOKEN>` en cada request a `/api/**`.
 
 - `POST /api/payments`
 - `GET /api/payments?page=0&size=50&sort=paymentDate,desc`
@@ -193,3 +192,11 @@ Recordá enviar `X-GYM-ID` en cada request a `/api/**`.
 - `DELETE /api/payments/{id}`
 
 UI: `http://localhost:3000/payments`
+
+---
+
+## Seguridad (local)
+
+- Mantener `server.address=127.0.0.1` para evitar acceso en LAN.
+- Usar un usuario de DB con permisos minimos (no superuser).
+- Rotar credenciales periodicamente y mantener `.env` fuera de git.

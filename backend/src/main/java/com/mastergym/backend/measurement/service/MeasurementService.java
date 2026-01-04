@@ -3,6 +3,7 @@ package com.mastergym.backend.measurement.service;
 import com.mastergym.backend.client.model.ClientEntity;
 import com.mastergym.backend.client.repository.ClientRepository;
 import com.mastergym.backend.common.error.BadRequestException;
+import com.mastergym.backend.common.audit.AuditService;
 import com.mastergym.backend.common.error.NotFoundException;
 import com.mastergym.backend.common.gym.GymContext;
 import com.mastergym.backend.measurement.dto.MeasurementRequest;
@@ -20,6 +21,8 @@ import org.springframework.stereotype.Service;
 
 import java.text.Normalizer;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.List;
 
 @Service
@@ -27,10 +30,12 @@ public class MeasurementService {
 
     private final MeasurementRepository measurementRepository;
     private final ClientRepository clientRepository;
+    private final AuditService auditService;
 
-    public MeasurementService(MeasurementRepository measurementRepository, ClientRepository clientRepository) {
+    public MeasurementService(MeasurementRepository measurementRepository, ClientRepository clientRepository, AuditService auditService) {
         this.measurementRepository = measurementRepository;
         this.clientRepository = clientRepository;
+        this.auditService = auditService;
     }
 
     public MeasurementResponse create(MeasurementRequest request) {
@@ -56,6 +61,7 @@ public class MeasurementService {
         );
 
         MeasurementEntity saved = measurementRepository.save(entity);
+        auditService.log("CREATE", "measurement", saved.getId(), buildMeasurementAuditDetails(saved));
         return toResponse(saved);
     }
 
@@ -84,6 +90,7 @@ public class MeasurementService {
                 spec,
                 Sort.by(Sort.Direction.DESC, "fecha")
         );
+        measurements = limitToLastFive(measurements);
         String html = MeasurementReportHtmlBuilder.build(client, measurements);
         return MeasurementReportPdfRenderer.render(html);
     }
@@ -100,6 +107,7 @@ public class MeasurementService {
                 spec,
                 Sort.by(Sort.Direction.DESC, "fecha")
         );
+        measurements = limitToLastFive(measurements);
         String html = MeasurementReportHtmlBuilder.build(client, measurements);
         byte[] pdf = MeasurementReportPdfRenderer.render(html);
         String filename = buildClientFilename(client);
@@ -125,6 +133,7 @@ public class MeasurementService {
         MeasurementEntity entity = measurementRepository.findByIdAndGymId(id, gymId)
                 .orElseThrow(() -> new NotFoundException("Medicion no encontrada"));
         measurementRepository.delete(entity);
+        auditService.log("DELETE", "measurement", entity.getId(), buildMeasurementAuditDetails(entity));
     }
 
     private MeasurementResponse toResponse(MeasurementEntity e) {
@@ -162,6 +171,14 @@ public class MeasurementService {
         };
     }
 
+    private Map<String, Object> buildMeasurementAuditDetails(MeasurementEntity measurement) {
+        Map<String, Object> details = new LinkedHashMap<>();
+        details.put("clientId", measurement.getClient().getId());
+        details.put("fecha", measurement.getFecha());
+        details.put("peso", measurement.getPeso());
+        return details;
+    }
+
     private static String blankToNull(String value) {
         if (value == null) return null;
         String trimmed = value.trim();
@@ -179,5 +196,12 @@ public class MeasurementService {
             slug = "cliente";
         }
         return "mediciones_" + slug + ".pdf";
+    }
+
+    private static List<MeasurementEntity> limitToLastFive(List<MeasurementEntity> measurements) {
+        if (measurements.size() <= 5) {
+            return measurements;
+        }
+        return measurements.subList(0, 5);
     }
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, Download, Eye, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, Download, Eye, FileText, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { apiDownload } from "@/lib/api";
 import { MedicionDetail } from "./MedicionDetail";
 import { MedicionForm } from "./MedicionForm";
+import { MedicionesReporteDialog } from "./MedicionesReporteDialog";
 import type { Cliente, Medicion } from "../types";
 
 interface MedicionesTabProps {
@@ -23,6 +24,8 @@ export function MedicionesTab({ mediciones, clientes, onCreateMedicion, onDelete
   const [dialogOpen, setDialogOpen] = useState(false);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedMedicion, setSelectedMedicion] = useState<Medicion | null>(null);
+  const [reporteDialogOpen, setReporteDialogOpen] = useState(false);
+  const [reporteCliente, setReporteCliente] = useState<Cliente | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
@@ -40,6 +43,11 @@ export function MedicionesTab({ mediciones, clientes, onCreateMedicion, onDelete
   const handleViewDetail = (medicion: Medicion) => {
     setSelectedMedicion(medicion);
     setDetailDialogOpen(true);
+  };
+
+  const handleOpenReporte = (cliente: Cliente) => {
+    setReporteCliente(cliente);
+    setReporteDialogOpen(true);
   };
 
   const getClienteNombre = (clienteId: string) => {
@@ -77,12 +85,12 @@ export function MedicionesTab({ mediciones, clientes, onCreateMedicion, onDelete
     }))
     .filter((group) => group.mediciones.length > 0);
 
-  const isExpanded = (clienteId: string) => expanded[clienteId] ?? true;
+  const isExpanded = (clienteId: string) => expanded[clienteId] ?? false;
 
   const toggleExpanded = (clienteId: string) => {
     setExpanded((prev) => ({
       ...prev,
-      [clienteId]: !(prev[clienteId] ?? true),
+      [clienteId]: !(prev[clienteId] ?? false),
     }));
   };
 
@@ -132,7 +140,7 @@ export function MedicionesTab({ mediciones, clientes, onCreateMedicion, onDelete
                   <DialogTitle className="text-2xl">Nueva Medición</DialogTitle>
                   <DialogDescription>Registra las medidas corporales del cliente</DialogDescription>
                 </DialogHeader>
-                <MedicionForm onSubmit={handleAddMedicion} onCancel={() => setDialogOpen(false)} clientes={clientes} />
+                <MedicionForm onSubmit={handleAddMedicion} onCancel={() => setDialogOpen(false)} clientes={clientes} mediciones={mediciones} />
               </DialogContent>
             </Dialog>
           </div>
@@ -197,6 +205,15 @@ export function MedicionesTab({ mediciones, clientes, onCreateMedicion, onDelete
                             type="button"
                             variant="ghost"
                             size="sm"
+                            onClick={() => handleOpenReporte(group.cliente)}
+                            className="rounded-xl text-[#ff5e62] hover:bg-[#ffe5e6] hover:text-[#ff5e62]"
+                          >
+                            <FileText className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
                             onClick={() => handleDownloadClienteReport(group.cliente.id)}
                             className="rounded-xl text-[#ff5e62] hover:bg-[#ffe5e6] hover:text-[#ff5e62]"
                           >
@@ -220,7 +237,7 @@ export function MedicionesTab({ mediciones, clientes, onCreateMedicion, onDelete
                               <TableRow className="bg-gray-50 hover:bg-gray-50">
                                 <TableHead className="rounded-tl-3xl">Fecha</TableHead>
                                 <TableHead>Peso</TableHead>
-                                <TableHead>Altura</TableHead>
+                                <TableHead>% Grasa</TableHead>
                                 <TableHead>IMC</TableHead>
                                 <TableHead className="rounded-tr-3xl text-right">Acciones</TableHead>
                               </TableRow>
@@ -237,7 +254,7 @@ export function MedicionesTab({ mediciones, clientes, onCreateMedicion, onDelete
                                       <span className="font-semibold text-gray-900">{medicion.peso} kg</span>
                                     </TableCell>
                                     <TableCell>
-                                      <span className="font-semibold text-gray-900">{medicion.altura} cm</span>
+                                      <span className="font-semibold text-gray-900">{medicion.grasaCorporal ?? "-"} %</span>
                                     </TableCell>
                                     <TableCell>
                                       <span className={`text-lg font-bold ${getIMCColor(imc)}`}>{imc}</span>
@@ -287,6 +304,16 @@ export function MedicionesTab({ mediciones, clientes, onCreateMedicion, onDelete
           {selectedMedicion && <MedicionDetail medicion={selectedMedicion} clienteNombre={getClienteNombre(selectedMedicion.clienteId)} />}
         </DialogContent>
       </Dialog>
+
+
+      {reporteCliente && (
+        <MedicionesReporteDialog
+          cliente={reporteCliente}
+          open={reporteDialogOpen}
+          onOpenChange={setReporteDialogOpen}
+          mediciones={mediciones.filter((m) => m.clienteId === reporteCliente.id)}
+        />
+      )}
     </>
   );
 }

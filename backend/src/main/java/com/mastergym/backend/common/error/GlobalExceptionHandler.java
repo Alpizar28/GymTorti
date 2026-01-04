@@ -3,6 +3,7 @@ package com.mastergym.backend.common.error;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -38,6 +39,11 @@ public class GlobalExceptionHandler {
         }
         details.put("fieldErrors", fieldErrors);
         return build(HttpStatus.BAD_REQUEST, "Validación fallida", req.getRequestURI(), details);
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ApiErrorResponse> handleAuth(AuthenticationException ex, HttpServletRequest req) {
+        return build(HttpStatus.UNAUTHORIZED, "Usuario o contrasena incorrectos.", req.getRequestURI(), null);
     }
 
     @ExceptionHandler(Exception.class)

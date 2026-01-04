@@ -3,6 +3,7 @@ package com.mastergym.backend.payment.service;
 import com.mastergym.backend.client.model.ClientEntity;
 import com.mastergym.backend.client.repository.ClientRepository;
 import com.mastergym.backend.common.enums.ClientStatus;
+import com.mastergym.backend.common.audit.AuditService;
 import com.mastergym.backend.common.error.BadRequestException;
 import com.mastergym.backend.common.error.NotFoundException;
 import com.mastergym.backend.common.gym.GymContext;
@@ -20,6 +21,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.time.LocalDate;
 import java.time.Period;
 import java.util.Locale;
@@ -31,10 +34,16 @@ public class PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final ClientRepository clientRepository;
+    private final AuditService auditService;
 
-    public PaymentService(PaymentRepository paymentRepository, ClientRepository clientRepository) {
+    public PaymentService(
+            PaymentRepository paymentRepository,
+            ClientRepository clientRepository,
+            AuditService auditService
+    ) {
         this.paymentRepository = paymentRepository;
         this.clientRepository = clientRepository;
+        this.auditService = auditService;
     }
 
     @Transactional
@@ -58,16 +67,25 @@ public class PaymentService {
 
         PaymentEntity saved = paymentRepository.save(entity);
         applyMembershipRenewalIfNeeded(client, saved, request.getNotes());
+        auditService.log("CREATE", "payment", saved.getId(), buildCreateAuditDetails(saved));
         return toResponse(saved);
     }
 
     public Page<PaymentResponse> list(
             Long clientId,
             String search,
+            Integer days,
             Pageable pageable
     ) {
         Long gymId = GymContext.requireGymId();
-        Specification<PaymentEntity> spec = specFor(gymId, clientId, search);
+        LocalDate fromDate = null;
+        LocalDate toDate = null;
+        if (days != null) {
+            LocalDate today = LocalDate.now();
+            fromDate = today.minusDays(days - 1L);
+            toDate = today;
+        }
+        Specification<PaymentEntity> spec = specFor(gymId, clientId, search, fromDate, toDate);
         return paymentRepository.findAll(spec, pageable).map(this::toResponse);
     }
 
@@ -83,23 +101,52 @@ public class PaymentService {
         PaymentEntity entity = paymentRepository.findByIdAndGymId(id, gymId)
                 .orElseThrow(() -> new NotFoundException("Pago no encontrado"));
 
+        Map<String, Object> auditDetails = new LinkedHashMap<>();
         if (request.getClientId() != null) {
             ClientEntity client = clientRepository.findByIdAndGymId(request.getClientId(), gymId)
                     .orElseThrow(() -> new BadRequestException("clientId inválido (no pertenece al gym)"));
             entity.setClient(client);
+            auditDetails.put("clientId", client.getId());
         }
 
-        if (request.getAmount() != null) entity.setAmount(request.getAmount());
-        if (request.getCurrency() != null) entity.setCurrency(request.getCurrency());
-        if (request.getPaymentMethod() != null) entity.setPaymentMethod(request.getPaymentMethod());
-        if (request.getPaymentType() != null) entity.setPaymentType(request.getPaymentType());
-        if (request.getStatus() != null) entity.setStatus(request.getStatus());
+        if (request.getAmount() != null) {
+            entity.setAmount(request.getAmount());
+            auditDetails.put("amount", request.getAmount());
+        }
+        if (request.getCurrency() != null) {
+            entity.setCurrency(request.getCurrency());
+            auditDetails.put("currency", request.getCurrency());
+        }
+        if (request.getPaymentMethod() != null) {
+            entity.setPaymentMethod(request.getPaymentMethod());
+            auditDetails.put("paymentMethod", request.getPaymentMethod());
+        }
+        if (request.getPaymentType() != null) {
+            entity.setPaymentType(request.getPaymentType());
+            auditDetails.put("paymentType", request.getPaymentType());
+        }
+        if (request.getStatus() != null) {
+            entity.setStatus(request.getStatus());
+            auditDetails.put("status", request.getStatus());
+        }
 
-        if (request.getReference() != null) entity.setReference(blankToNull(request.getReference()));
-        if (request.getNotes() != null) entity.setNotes(blankToNull(request.getNotes()));
-        if (request.getPaymentDate() != null) entity.setPaymentDate(request.getPaymentDate());
+        if (request.getReference() != null) {
+            entity.setReference(blankToNull(request.getReference()));
+            auditDetails.put("reference", request.getReference());
+        }
+        if (request.getNotes() != null) {
+            entity.setNotes(blankToNull(request.getNotes()));
+            auditDetails.put("notes", request.getNotes());
+        }
+        if (request.getPaymentDate() != null) {
+            entity.setPaymentDate(request.getPaymentDate());
+            auditDetails.put("paymentDate", request.getPaymentDate());
+        }
 
         PaymentEntity saved = paymentRepository.save(entity);
+        if (!auditDetails.isEmpty()) {
+            auditService.log("UPDATE", "payment", saved.getId(), auditDetails);
+        }
         return toResponse(saved);
     }
 
@@ -107,7 +154,12 @@ public class PaymentService {
         Long gymId = GymContext.requireGymId();
         PaymentEntity entity = paymentRepository.findByIdAndGymId(id, gymId)
                 .orElseThrow(() -> new NotFoundException("Pago no encontrado"));
+        Map<String, Object> auditDetails = new LinkedHashMap<>();
+        auditDetails.put("clientId", entity.getClient().getId());
+        auditDetails.put("amount", entity.getAmount());
+        auditDetails.put("paymentDate", entity.getPaymentDate());
         paymentRepository.delete(entity);
+        auditService.log("DELETE", "payment", entity.getId(), auditDetails);
     }
 
     private PaymentResponse toResponse(PaymentEntity e) {
@@ -180,13 +232,21 @@ public class PaymentService {
         };
     }
 
-    private static Specification<PaymentEntity> specFor(Long gymId, Long clientId, String search) {
+    private static Specification<PaymentEntity> specFor(Long gymId, Long clientId, String search, LocalDate fromDate, LocalDate toDate) {
         return (root, query, cb) -> {
             var predicates = new ArrayList<jakarta.persistence.criteria.Predicate>();
             predicates.add(cb.equal(root.get("gymId"), gymId));
 
             if (clientId != null) {
                 predicates.add(cb.equal(root.get("client").get("id"), clientId));
+            }
+
+            if (fromDate != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("paymentDate"), fromDate));
+            }
+
+            if (toDate != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("paymentDate"), toDate));
             }
 
             if (search != null && !search.isBlank()) {
@@ -199,6 +259,19 @@ public class PaymentService {
 
             return cb.and(predicates.toArray(jakarta.persistence.criteria.Predicate[]::new));
         };
+    }
+
+    private Map<String, Object> buildCreateAuditDetails(PaymentEntity payment) {
+        Map<String, Object> details = new LinkedHashMap<>();
+        details.put("clientId", payment.getClient().getId());
+        details.put("amount", payment.getAmount());
+        details.put("currency", payment.getCurrency());
+        details.put("paymentMethod", payment.getPaymentMethod());
+        details.put("paymentType", payment.getPaymentType());
+        details.put("status", payment.getStatus());
+        details.put("paymentDate", payment.getPaymentDate());
+        if (payment.getReference() != null) details.put("reference", payment.getReference());
+        return details;
     }
 
     private static String blankToNull(String value) {

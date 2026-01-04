@@ -7,6 +7,7 @@ import com.mastergym.backend.payment.enums.PaymentType;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Size;
 
@@ -16,6 +17,7 @@ import java.time.LocalDate;
 public class PaymentRequest {
 
     @NotNull(message = "clientId es obligatorio")
+    @Positive(message = "clientId debe ser mayor a 0")
     private Long clientId;
 
     @NotNull(message = "amount es obligatorio")

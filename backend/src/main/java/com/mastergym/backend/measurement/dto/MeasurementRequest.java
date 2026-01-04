@@ -1,46 +1,65 @@
 package com.mastergym.backend.measurement.dto;
 
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PastOrPresent;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.DecimalMax;
 
 import java.time.LocalDate;
 
 public class MeasurementRequest {
 
-    @NotNull
+    @NotNull(message = "clientId es obligatorio")
+    @Positive(message = "clientId debe ser mayor a 0")
     private Long clientId;
 
-    @NotNull
+    @NotNull(message = "fecha es obligatoria")
+    @PastOrPresent(message = "fecha no puede ser futura")
     private LocalDate fecha;
 
-    @NotNull
+    @NotNull(message = "peso es obligatorio")
+    @DecimalMin(value = "0.01", message = "peso debe ser mayor a 0")
     private Double peso;
 
-    @NotNull
+    @NotNull(message = "altura es obligatorio")
+    @DecimalMin(value = "0.01", message = "altura debe ser mayor a 0")
     private Double altura;
 
-    @NotNull
+    @NotNull(message = "pechoCm es obligatorio")
+    @DecimalMin(value = "0.01", message = "pechoCm debe ser mayor a 0")
     private Double pechoCm;
 
-    @NotNull
+    @NotNull(message = "cinturaCm es obligatorio")
+    @DecimalMin(value = "0.01", message = "cinturaCm debe ser mayor a 0")
     private Double cinturaCm;
 
-    @NotNull
+    @NotNull(message = "caderaCm es obligatorio")
+    @DecimalMin(value = "0.01", message = "caderaCm debe ser mayor a 0")
     private Double caderaCm;
 
-    @NotNull
+    @NotNull(message = "brazoIzqCm es obligatorio")
+    @DecimalMin(value = "0.01", message = "brazoIzqCm debe ser mayor a 0")
     private Double brazoIzqCm;
 
-    @NotNull
+    @NotNull(message = "brazoDerCm es obligatorio")
+    @DecimalMin(value = "0.01", message = "brazoDerCm debe ser mayor a 0")
     private Double brazoDerCm;
 
-    @NotNull
+    @NotNull(message = "piernaIzqCm es obligatorio")
+    @DecimalMin(value = "0.01", message = "piernaIzqCm debe ser mayor a 0")
     private Double piernaIzqCm;
 
-    @NotNull
+    @NotNull(message = "piernaDerCm es obligatorio")
+    @DecimalMin(value = "0.01", message = "piernaDerCm debe ser mayor a 0")
     private Double piernaDerCm;
 
+    @DecimalMin(value = "0", message = "grasaCorporal debe ser mayor o igual a 0")
+    @DecimalMax(value = "100", message = "grasaCorporal debe ser menor o igual a 100")
     private Double grasaCorporal;
 
+    @Size(max = 500, message = "notas supera el maximo (500)")
     private String notas;
 
     public MeasurementRequest() {}
@@ -146,6 +165,12 @@ public class MeasurementRequest {
     }
 
     public void setNotas(String notas) {
-        this.notas = notas;
+        this.notas = blankToNull(notas);
+    }
+
+    private static String blankToNull(String value) {
+        if (value == null) return null;
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

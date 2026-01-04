@@ -34,12 +34,16 @@ public class PaymentController {
     public Page<PaymentResponse> list(
             @RequestParam(required = false) Long clientId,
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) Integer days,
             @PageableDefault(size = 50, sort = "paymentDate", direction = Sort.Direction.DESC) Pageable pageable
     ) {
+        if (days != null && (days < 1 || days > 365)) {
+            throw new BadRequestException("days debe estar entre 1 y 365");
+        }
         if (pageable.getPageSize() > 200) {
             throw new BadRequestException("size máximo permitido: 200");
         }
-        return paymentService.list(clientId, search, pageable);
+        return paymentService.list(clientId, search, days, pageable);
     }
 
     @GetMapping("/{id}")

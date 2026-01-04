@@ -1,22 +1,18 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Bell, FileText, Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { Bell, Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ClienteForm } from "./ClienteForm";
-import { ClienteReporteDialog } from "./ClienteReporteDialog";
-import type { Cliente, ClienteFormData, Medicion, Pago } from "../types";
+import type { Cliente, ClienteFormData } from "../types";
 
 interface ClientesTabProps {
   clientes: Cliente[];
   allClientes: Cliente[];
-  pagos: Pago[];
-  mediciones: Medicion[];
   onCreateCliente: (cliente: ClienteFormData) => void | Promise<void>;
   onUpdateCliente: (clienteId: string, cliente: ClienteFormData) => void | Promise<void>;
   onDeleteCliente: (clienteId: string) => void | Promise<void>;
@@ -27,19 +23,14 @@ interface ClientesTabProps {
 export function ClientesTab({
   clientes,
   allClientes,
-  pagos,
-  mediciones,
   onCreateCliente,
   onUpdateCliente,
   onDeleteCliente,
   onSendReminder,
   onRefresh,
 }: ClientesTabProps) {
-  const router = useRouter();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCliente, setEditingCliente] = useState<Cliente | null>(null);
-  const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null);
-  const [reporteDialogOpen, setReporteDialogOpen] = useState(false);
   const [filter, setFilter] = useState<"todos" | "activos" | "vencidos" | "por-vencer">("todos");
 
   const handleAddCliente = async (cliente: ClienteFormData) => {
@@ -74,11 +65,6 @@ export function ClientesTab({
   const openEditDialog = (cliente: Cliente) => {
     setEditingCliente(cliente);
     setDialogOpen(true);
-  };
-
-  const openReporteDialog = (cliente: Cliente) => {
-    setSelectedCliente(cliente);
-    setReporteDialogOpen(true);
   };
 
   const getEstadoBadge = (estado: Cliente["estado"], fechaVencimiento: string) => {
@@ -264,18 +250,6 @@ export function ClientesTab({
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => openReporteDialog(cliente)}
-                            className="group relative rounded-xl text-[#ff5e62] hover:bg-[#ffe5e6] hover:text-[#ff5e62]"
-                            aria-label="Reporte del cliente"
-                          >
-                            <FileText className="h-4 w-4" />
-                            <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 w-max -translate-x-1/2 rounded-xl bg-gradient-to-r from-[#ff5e62] to-[#ff9966] px-3 py-2 text-xs font-semibold text-white shadow-lg opacity-0 transition-all duration-200 group-hover:opacity-100 group-hover:-translate-y-1">
-                              Reporte del cliente
-                            </span>
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
                             onClick={() => openEditDialog(cliente)}
                             className="group relative rounded-xl text-[#ff5e62] hover:bg-[#ffe5e6] hover:text-[#ff5e62]"
                             aria-label="Editar cliente"
@@ -308,17 +282,6 @@ export function ClientesTab({
         </CardContent>
       </Card>
 
-      {selectedCliente && (
-        <>
-          <ClienteReporteDialog
-            cliente={selectedCliente}
-            open={reporteDialogOpen}
-            onOpenChange={setReporteDialogOpen}
-            pagos={pagos.filter((p) => p.clienteId === selectedCliente.id)}
-            mediciones={mediciones.filter((m) => m.clienteId === selectedCliente.id)}
-          />
-        </>
-      )}
     </>
   );
 }

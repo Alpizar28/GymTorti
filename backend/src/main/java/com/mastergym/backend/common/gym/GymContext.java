@@ -16,7 +16,7 @@ public final class GymContext {
     public static Long requireGymId() {
         Long gymId = GYM_ID.get();
         if (gymId == null) {
-            throw new IllegalStateException("GymContext no inicializado (falta X-GYM-ID)");
+            throw new IllegalStateException("GymContext no inicializado (falta gymId en el token)");
         }
         return gymId;
     }
@@ -25,4 +25,3 @@ public final class GymContext {
         GYM_ID.remove();
     }
 }
-

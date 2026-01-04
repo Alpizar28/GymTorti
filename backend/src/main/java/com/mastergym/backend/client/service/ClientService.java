@@ -5,6 +5,7 @@ import com.mastergym.backend.client.dto.ClientResponse;
 import com.mastergym.backend.client.model.ClientEntity;
 import com.mastergym.backend.client.repository.ClientRepository;
 import com.mastergym.backend.common.enums.ClientStatus;
+import com.mastergym.backend.common.audit.AuditService;
 import com.mastergym.backend.common.error.BadRequestException;
 import com.mastergym.backend.common.error.NotFoundException;
 import com.mastergym.backend.common.gym.GymContext;
@@ -15,15 +16,19 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.time.LocalDate;
 
 @Service
 public class ClientService {
 
     private final ClientRepository clientRepository;
+    private final AuditService auditService;
 
-    public ClientService(ClientRepository clientRepository) {
+    public ClientService(ClientRepository clientRepository, AuditService auditService) {
         this.clientRepository = clientRepository;
+        this.auditService = auditService;
     }
 
     public ClientResponse createClient(ClientRequest request) {
@@ -38,6 +43,7 @@ public class ClientService {
         );
 
         ClientEntity saved = clientRepository.save(entity);
+        auditService.log("CREATE", "client", saved.getId(), buildClientAuditDetails(saved));
         return toResponse(refreshStatus(saved));
     }
 
@@ -76,6 +82,7 @@ public class ClientService {
         if (request.getNotas() != null) entity.setNotas(blankToNull(request.getNotas()));
 
         ClientEntity saved = clientRepository.save(entity);
+        auditService.log("UPDATE", "client", saved.getId(), buildClientAuditDetails(saved));
         return toResponse(refreshStatus(saved));
     }
 
@@ -84,6 +91,7 @@ public class ClientService {
         ClientEntity entity = clientRepository.findByIdAndGymId(id, gymId)
                 .orElseThrow(() -> new NotFoundException("Cliente no encontrado"));
         clientRepository.delete(entity);
+        auditService.log("DELETE", "client", entity.getId(), buildClientAuditDetails(entity));
     }
 
     private static Specification<ClientEntity> specFor(Long gymId, String search) {
@@ -142,6 +150,16 @@ public class ClientService {
             return clientRepository.save(entity);
         }
         return entity;
+    }
+
+    private Map<String, Object> buildClientAuditDetails(ClientEntity client) {
+        Map<String, Object> details = new LinkedHashMap<>();
+        details.put("nombre", client.getNombre());
+        if (client.getApellido() != null) details.put("apellido", client.getApellido());
+        if (client.getTelefono() != null) details.put("telefono", client.getTelefono());
+        if (client.getEmail() != null) details.put("email", client.getEmail());
+        details.put("estado", client.getEstado());
+        return details;
     }
 
     private static String blankToNull(String value) {

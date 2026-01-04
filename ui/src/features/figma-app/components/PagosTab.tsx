@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import * as XLSX from "xlsx";
 import { BarChart3, Download, Plus, Trash2 } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PagoForm } from "./PagoForm";
 import type { Cliente, Pago } from "../types";
@@ -19,9 +21,54 @@ interface PagosTabProps {
 }
 
 const colones = new Intl.NumberFormat("es-CR", { style: "currency", currency: "CRC", maximumFractionDigits: 0 });
+const DEFAULT_PERIOD_DAYS = 30;
+const PERIOD_STORAGE_KEY = "mastergym.payments.periodDays";
+const QUICK_PERIODS = ["7", "15", "30", "60", "90"] as const;
+type PeriodPreset = (typeof QUICK_PERIODS)[number] | "custom";
+
+function clampDays(value: number) {
+  return Math.min(365, Math.max(1, Math.round(value)));
+}
+
+function resolvePreset(days: number): PeriodPreset {
+  const asString = String(days) as (typeof QUICK_PERIODS)[number];
+  return QUICK_PERIODS.includes(asString) ? asString : "custom";
+}
+
+function parseLocalDate(value: string): Date | null {
+  if (!value) return null;
+  const dateOnly = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (dateOnly) {
+    const year = Number(dateOnly[1]);
+    const month = Number(dateOnly[2]) - 1;
+    const day = Number(dateOnly[3]);
+    return new Date(year, month, day);
+  }
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed;
+}
+
+function formatShortDate(date: Date) {
+  const dd = String(date.getDate()).padStart(2, "0");
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  return `${dd}/${mm}`;
+}
+
+function isoDateFromDate(date: Date) {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
 
 export function PagosTab({ pagos, onCreatePago, onDeletePago, clientes }: PagosTabProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [tablePage, setTablePage] = useState(0);
+  const [periodDays, setPeriodDays] = useState(DEFAULT_PERIOD_DAYS);
+  const [periodPreset, setPeriodPreset] = useState<PeriodPreset>(resolvePreset(DEFAULT_PERIOD_DAYS));
+  const [customDays, setCustomDays] = useState(String(DEFAULT_PERIOD_DAYS));
+  const [periodReady, setPeriodReady] = useState(false);
 
   const handleAddPago = async (pago: Omit<Pago, "id">) => {
     await onCreatePago(pago);
@@ -34,116 +81,213 @@ export function PagosTab({ pagos, onCreatePago, onDeletePago, clientes }: PagosT
     }
   };
 
-  const handleGenerarReporte = () => {
-    const now = new Date();
-    const mesActual = now.toLocaleString("es-CR", { month: "long", year: "numeric" });
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(PERIOD_STORAGE_KEY);
+      if (stored) {
+        const parsed = Number(stored);
+        if (Number.isFinite(parsed)) {
+          const clamped = clampDays(parsed);
+          setPeriodDays(clamped);
+          setCustomDays(String(clamped));
+          setPeriodPreset(resolvePreset(clamped));
+        }
+      }
+    } catch {
+      // ignore storage errors
+    } finally {
+      setPeriodReady(true);
+    }
+  }, []);
 
-    const pagosMes = pagos.filter((p) => {
-      const pagoDate = new Date(p.fecha);
-      return pagoDate.getMonth() === now.getMonth() && pagoDate.getFullYear() === now.getFullYear();
+  useEffect(() => {
+    if (!periodReady) return;
+    try {
+      window.localStorage.setItem(PERIOD_STORAGE_KEY, String(periodDays));
+    } catch {
+      // ignore storage errors
+    }
+  }, [periodDays, periodReady]);
+
+  useEffect(() => {
+    setTablePage(0);
+  }, [periodDays, pagos]);
+
+  const tablePageSize = 10;
+
+  const pagosFiltrados = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const fromDate = new Date(today);
+    fromDate.setDate(today.getDate() - (periodDays - 1));
+    return pagos
+      .map((p) => ({ ...p, parsedFecha: parseLocalDate(p.fecha) }))
+      .filter((p) => p.parsedFecha !== null)
+      .filter((p) => {
+        const parsed = p.parsedFecha;
+        if (!parsed) return false;
+        parsed.setHours(0, 0, 0, 0);
+        return parsed >= fromDate && parsed <= today;
+      })
+      .sort((a, b) => (b.parsedFecha as Date).getTime() - (a.parsedFecha as Date).getTime());
+  }, [pagos, periodDays]);
+
+  const totalMovements = pagosFiltrados.length;
+  const totalAmount = useMemo(() => pagosFiltrados.reduce((sum, p) => sum + p.monto, 0), [pagosFiltrados]);
+  const periodLabel = periodDays === 1 ? "Ultimo dia" : `Ultimos ${periodDays} dias`;
+  const totalTablePages = Math.max(1, Math.ceil(totalMovements / tablePageSize));
+  const pagosPaginados = useMemo(() => {
+    const startIndex = tablePage * tablePageSize;
+    return pagosFiltrados.slice(startIndex, startIndex + tablePageSize);
+  }, [pagosFiltrados, tablePage, tablePageSize]);
+
+  useEffect(() => {
+    if (tablePage > totalTablePages - 1) {
+      setTablePage(Math.max(totalTablePages - 1, 0));
+    }
+  }, [tablePage, totalTablePages]);
+
+  const ingresosPorDia = useMemo(() => {
+    const map = new Map<string, number>();
+    pagosFiltrados.forEach((pago) => {
+      const parsed = (pago as Pago & { parsedFecha?: Date }).parsedFecha;
+      if (!parsed) return;
+      const key = `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, "0")}-${String(parsed.getDate()).padStart(2, "0")}`;
+      map.set(key, (map.get(key) ?? 0) + pago.monto);
     });
 
-    const ingresoTotal = pagosMes.reduce((sum, p) => sum + p.monto, 0);
+    if (periodDays <= 0) return [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const fromDate = new Date(today);
+    fromDate.setDate(today.getDate() - (periodDays - 1));
 
-    let reporte = `==============================================\n`;
-    reporte += `REPORTE DE INGRESOS - MASTERGYM\n`;
-    reporte += `Poder y Pasión\n`;
-    reporte += `==============================================\n\n`;
-    reporte += `Periodo: ${mesActual}\n`;
-    reporte += `Total de pagos: ${pagosMes.length}\n`;
-    reporte += `Ingreso total: ${colones.format(ingresoTotal)}\n\n`;
-    reporte += `DETALLE DE PAGOS:\n`;
-    reporte += `${"=".repeat(100)}\n`;
-    reporte += `${"Fecha".padEnd(15)} | ${"Cliente".padEnd(30)} | ${"Monto".padEnd(15)} | ${"Método".padEnd(15)} | ${"Tipo".padEnd(15)}\n`;
-    reporte += `${"-".repeat(100)}\n`;
+    const data: { dia: string; ingresos: number }[] = [];
+    for (let i = 0; i < periodDays; i += 1) {
+      const date = new Date(fromDate);
+      date.setDate(fromDate.getDate() + i);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+      data.push({ dia: formatShortDate(date), ingresos: map.get(key) ?? 0 });
+    }
+    return data.filter((d) => d.ingresos > 0);
+  }, [pagosFiltrados, periodDays]);
 
-    pagosMes
-      .slice()
-      .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
-      .forEach((pago) => {
-        const cliente = clientes.find((c) => c.id === pago.clienteId);
-        const nombreCliente = cliente ? `${cliente.nombre} ${cliente.apellido}` : "Desconocido";
-        reporte += `${new Date(pago.fecha).toLocaleDateString("es-CR").padEnd(15)} | ${nombreCliente.padEnd(30)} | ${colones
-          .format(pago.monto)
-          .padEnd(15)} | ${pago.metodoPago.padEnd(15)} | ${pago.tipoPago.padEnd(15)}\n`;
-      });
+  function handlePresetChange(value: PeriodPreset) {
+    setPeriodPreset(value);
+    if (value === "custom") {
+      const parsed = Number(customDays);
+      if (Number.isFinite(parsed)) {
+        setPeriodDays(clampDays(parsed));
+      }
+      return;
+    }
+    const nextDays = Number(value);
+    if (!Number.isFinite(nextDays)) return;
+    setPeriodDays(nextDays);
+    setCustomDays(String(nextDays));
+  }
 
-    reporte += `\n${"=".repeat(100)}\n`;
-    reporte += `Reporte generado el ${new Date().toLocaleString("es-CR")}\n`;
-    reporte += `==============================================\n`;
+  function handleCustomDaysChange(value: string) {
+    setCustomDays(value);
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return;
+    setPeriodDays(clampDays(parsed));
+  }
 
-    const blob = new Blob([reporte], { type: "text/plain;charset=utf-8" });
+  function handleCustomDaysBlur() {
+    if (!customDays.trim()) {
+      setCustomDays(String(periodDays));
+      return;
+    }
+    const parsed = Number(customDays);
+    if (!Number.isFinite(parsed)) {
+      setCustomDays(String(periodDays));
+      return;
+    }
+    const clamped = clampDays(parsed);
+    setCustomDays(String(clamped));
+    setPeriodDays(clamped);
+  }
+
+  const handleDownloadExcel = () => {
+    const rows = [
+      ["Fecha", "Cliente", "Metodo", "Descripcion/Referencia", "Monto"],
+      ...pagosFiltrados.map((pago) => [
+        new Date(pago.fecha).toLocaleDateString("es-CR"),
+        getClienteNombre(pago.clienteId),
+        pago.metodoPago,
+        pago.referencia ?? "\u2014",
+        colones.format(pago.monto),
+      ]),
+      ["Total", "", "", "", colones.format(totalAmount)],
+    ];
+
+    const worksheet = XLSX.utils.aoa_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Movimientos");
+
+    const endDate = new Date();
+    const startDate = new Date(endDate);
+    startDate.setDate(endDate.getDate() - (periodDays - 1));
+    const fileName = `reporte_pagos_periodo_${isoDateFromDate(startDate)}_a_${isoDateFromDate(endDate)}.xlsx`;
+    const output = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+    const blob = new Blob([output], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `reporte-ingresos-${now.getMonth() + 1}-${now.getFullYear()}.txt`;
+    a.download = fileName;
     a.click();
     URL.revokeObjectURL(url);
   };
 
   const getClienteNombre = (clienteId: string) => {
     const cliente = clientes.find((c) => c.id === clienteId);
-    return cliente ? `${cliente.nombre} ${cliente.apellido}` : "Cliente no encontrado";
+    return cliente ? `${cliente.nombre} ${cliente.apellido}` : "\u2014";
   };
-
-  const getTipoPagoBadgeClass = (tipo: string) => {
-    switch (tipo) {
-      case "diario":
-        return "bg-gray-100 text-gray-900 border-gray-200";
-      case "mensual":
-        return "bg-blue-100 text-blue-900 border-blue-200";
-      case "trimestral":
-        return "bg-purple-100 text-purple-900 border-purple-200";
-      case "semestral":
-        return "bg-orange-100 text-orange-900 border-orange-200";
-      case "anual":
-        return "bg-green-100 text-green-900 border-green-200";
-      default:
-        return "bg-gray-100 text-gray-900 border-gray-200";
-    }
-  };
-
-  const now = new Date();
-  const diasEnMes = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-  const ingresosPorDia = Array.from({ length: diasEnMes }, (_, i) => {
-    const dia = i + 1;
-    const ingresos = pagos
-      .filter((p) => {
-        const pagoDate = new Date(p.fecha);
-        return (
-          pagoDate.getMonth() === now.getMonth() &&
-          pagoDate.getFullYear() === now.getFullYear() &&
-          pagoDate.getDate() === dia
-        );
-      })
-      .reduce((sum, p) => sum + p.monto, 0);
-
-    return { dia: dia.toString(), ingresos };
-  }).filter((d) => d.ingresos > 0);
-
-  const ingresosMes = pagos
-    .filter((p) => {
-      const pagoDate = new Date(p.fecha);
-      return pagoDate.getMonth() === now.getMonth() && pagoDate.getFullYear() === now.getFullYear();
-    })
-    .reduce((sum, p) => sum + p.monto, 0);
 
   return (
     <div className="space-y-6">
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card className="overflow-hidden rounded-3xl border-none shadow-xl">
+          <CardHeader className="border-b bg-gradient-to-r from-gray-50 to-white">
+            <CardTitle className="text-sm text-gray-600">Ingresos del periodo</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <p className="font-black text-gray-900" style={{ fontSize: "1.75rem" }}>
+              {colones.format(totalAmount)}
+            </p>
+            <p className="mt-1 text-sm text-gray-600">{periodLabel}</p>
+          </CardContent>
+        </Card>
+
+        <Card className="overflow-hidden rounded-3xl border-none shadow-xl">
+          <CardHeader className="border-b bg-gradient-to-r from-gray-50 to-white">
+            <CardTitle className="text-sm text-gray-600">Cantidad de movimientos</CardTitle>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <p className="font-black text-gray-900" style={{ fontSize: "1.75rem" }}>
+              {totalMovements}
+            </p>
+            <p className="mt-1 text-sm text-gray-600">{periodLabel}</p>
+          </CardContent>
+        </Card>
+      </div>
       {ingresosPorDia.length > 0 && (
         <Card className="overflow-hidden rounded-3xl border-none shadow-xl">
           <CardHeader className="border-b bg-gradient-to-r from-gray-50 to-white">
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="font-black text-gray-900" style={{ fontSize: "1.5rem" }}>
-                  Ingresos del Mes
+                  Ingresos del periodo
                 </CardTitle>
-                <p className="mt-1 text-sm text-gray-600">{now.toLocaleString("es-CR", { month: "long", year: "numeric" })}</p>
+                <p className="mt-1 text-sm text-gray-600">{periodLabel}</p>
               </div>
               <div className="text-right">
                 <p className="text-sm text-gray-600">Total</p>
                 <p className="font-black text-gray-900" style={{ fontSize: "1.5rem" }}>
-                  {colones.format(ingresosMes)}
+                  {colones.format(totalAmount)}
                 </p>
               </div>
             </div>
@@ -152,12 +296,12 @@ export function PagosTab({ pagos, onCreatePago, onDeletePago, clientes }: PagosT
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={ingresosPorDia}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="dia" tick={{ fontSize: 12 }} stroke="#9ca3af" label={{ value: "Día del mes", position: "insideBottom", offset: -5 }} />
+                <XAxis dataKey="dia" tick={{ fontSize: 12 }} stroke="#9ca3af" label={{ value: "Dia del periodo", position: "insideBottom", offset: -5 }} />
                 <YAxis tick={{ fontSize: 12 }} stroke="#9ca3af" tickFormatter={(value) => colones.format(value as number)} />
                 <Tooltip
                   contentStyle={{ background: "white", border: "none", borderRadius: "12px", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }}
                   formatter={(value: number) => [colones.format(value), "Ingresos"]}
-                  labelFormatter={(label) => `Día ${label}`}
+                  labelFormatter={(label) => `Dia ${label}`}
                 />
                 <Bar dataKey="ingresos" fill="url(#gradientBar)" radius={[8, 8, 0, 0]} />
                 <defs>
@@ -181,10 +325,39 @@ export function PagosTab({ pagos, onCreatePago, onDeletePago, clientes }: PagosT
               </CardTitle>
               <p className="mt-1 text-sm text-gray-600">Registro y control de ingresos</p>
             </div>
-            <div className="flex items-center gap-3">
-              <Button variant="outline" onClick={handleGenerarReporte} className="rounded-xl">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-col gap-1">
+                <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Periodo (dias)</span>
+                <div className="flex items-center gap-2">
+                  <select
+                    className="rounded-xl border px-3 py-2 text-sm"
+                    value={periodPreset}
+                    onChange={(e) => handlePresetChange(e.target.value as PeriodPreset)}
+                  >
+                    <option value="7">7 dias</option>
+                    <option value="15">15 dias</option>
+                    <option value="30">30 dias</option>
+                    <option value="60">60 dias</option>
+                    <option value="90">90 dias</option>
+                    <option value="custom">Personalizado</option>
+                  </select>
+                  {periodPreset === "custom" && (
+                    <Input
+                      type="number"
+                      min={1}
+                      max={365}
+                      value={customDays}
+                      onChange={(e) => handleCustomDaysChange(e.target.value)}
+                      onBlur={handleCustomDaysBlur}
+                      className="w-28 rounded-xl"
+                      inputMode="numeric"
+                    />
+                  )}
+                </div>
+              </div>
+              <Button variant="outline" onClick={handleDownloadExcel} className="rounded-xl">
                 <Download className="mr-2 h-5 w-5" />
-                Descargar Reporte
+                Descargar Excel
               </Button>
               <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                 <DialogTrigger asChild>
@@ -212,57 +385,91 @@ export function PagosTab({ pagos, onCreatePago, onDeletePago, clientes }: PagosT
               </div>
               <p className="text-lg text-gray-500">No hay pagos registrados. Registra el primer pago.</p>
             </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-gray-50 hover:bg-gray-50">
-                    <TableHead className="rounded-tl-3xl">Cliente</TableHead>
-                    <TableHead>Fecha</TableHead>
-                    <TableHead>Monto</TableHead>
-                    <TableHead>Método</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Referencia</TableHead>
-                    <TableHead className="rounded-tr-3xl text-right">Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {pagos
-                    .slice()
-                    .reverse()
-                    .map((pago) => (
-                      <TableRow key={pago.id} className="transition-colors hover:bg-gray-50">
-                        <TableCell>
-                          <div className="font-semibold text-gray-900">{getClienteNombre(pago.clienteId)}</div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="text-sm text-gray-900">{new Date(pago.fecha).toLocaleDateString("es-CR")}</div>
-                        </TableCell>
-                        <TableCell>
-                          <span className="font-bold text-gray-900">{colones.format(pago.monto)}</span>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="capitalize">
-                            {pago.metodoPago}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={`${getTipoPagoBadgeClass(pago.tipoPago)} capitalize`}>{pago.tipoPago}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-sm text-gray-600">{pago.referencia || "-"}</span>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button variant="ghost" size="sm" onClick={() => handleDeletePago(pago.id)} className="rounded-xl text-red-600 hover:bg-red-50 hover:text-red-700">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
+            ) : (
+              <>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-gray-50 hover:bg-gray-50">
+                        <TableHead className="rounded-tl-3xl">Fecha</TableHead>
+                        <TableHead>Cliente</TableHead>
+                        <TableHead>Metodo</TableHead>
+                        <TableHead>Descripcion/Referencia</TableHead>
+                        <TableHead className="text-right">Monto</TableHead>
+                        <TableHead className="rounded-tr-3xl text-right">Acciones</TableHead>
                       </TableRow>
-                    ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+                    </TableHeader>
+                    <TableBody>
+                      {pagosPaginados.map((pago) => (
+                        <TableRow key={pago.id} className="transition-colors hover:bg-gray-50">
+                          <TableCell>
+                            <div className="text-sm text-gray-900">{new Date(pago.fecha).toLocaleDateString("es-CR")}</div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="font-semibold text-gray-900">{getClienteNombre(pago.clienteId)}</div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="capitalize">
+                              {pago.metodoPago}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm text-gray-600">{pago.referencia ?? "\u2014"}</span>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <span className="font-bold text-gray-900">{colones.format(pago.monto)}</span>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeletePago(pago.id)}
+                              className="rounded-xl text-red-600 hover:bg-red-50 hover:text-red-700"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {pagosPaginados.length === 0 && (
+                        <TableRow>
+                          <TableCell className="py-10 text-center text-gray-500" colSpan={6}>
+                            Sin pagos en el periodo seleccionado.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+                <div className="flex flex-wrap items-center justify-between gap-2 px-6 py-4 text-sm text-gray-600">
+                  <div>
+                    Pagina <span className="font-semibold">{tablePage + 1}</span> de{" "}
+                    <span className="font-semibold">{totalTablePages}</span> -{" "}
+                    <span className="font-semibold">{totalMovements}</span> movimientos
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-xl"
+                      onClick={() => setTablePage((p) => Math.max(0, p - 1))}
+                      disabled={tablePage <= 0}
+                    >
+                      Anterior
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-xl"
+                      onClick={() => setTablePage((p) => Math.min(Math.max(totalTablePages - 1, 0), p + 1))}
+                      disabled={tablePage >= totalTablePages - 1}
+                    >
+                      Siguiente
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
         </CardContent>
       </Card>
     </div>

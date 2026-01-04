@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useMemo } from "react";
+import { useForm, useWatch } from "react-hook-form";
 import { AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,7 @@ const colones = new Intl.NumberFormat("es-CR", { style: "currency", currency: "C
 
 export function PagoForm({ onSubmit, onCancel, clientes }: PagoFormProps) {
   const today = new Date().toISOString().split("T")[0];
-  const { register, handleSubmit, setValue, watch, formState } = useForm<Omit<Pago, "id">>({
+  const { register, handleSubmit, setValue, control, formState } = useForm<Omit<Pago, "id">>({
     defaultValues: {
       clienteId: "",
       monto: 0,
@@ -31,12 +31,10 @@ export function PagoForm({ onSubmit, onCancel, clientes }: PagoFormProps) {
     },
   });
 
-  const clienteId = watch("clienteId");
-  const tipoPago = watch("tipoPago");
-  const metodoPago = watch("metodoPago");
+  const clienteId = useWatch({ control, name: "clienteId" });
+  const tipoPago = useWatch({ control, name: "tipoPago" });
+  const metodoPago = useWatch({ control, name: "metodoPago" });
   const { errors } = formState;
-
-  const [clienteSeleccionado, setClienteSeleccionado] = useState<Cliente | null>(null);
 
   const montosRecomendados: Record<string, number> = {
     diario: 1000,
@@ -46,15 +44,10 @@ export function PagoForm({ onSubmit, onCancel, clientes }: PagoFormProps) {
     anual: 120000,
   };
 
-  useEffect(() => {
-    setValue("fecha", today);
-    if (!clienteId) {
-      setClienteSeleccionado(null);
-      return;
-    }
-    const cliente = clientes.find((c) => c.id === clienteId);
-    setClienteSeleccionado(cliente || null);
-  }, [clienteId, clientes, setValue, today]);
+  const clienteSeleccionado = useMemo(() => {
+    if (!clienteId) return null;
+    return clientes.find((c) => c.id === clienteId) ?? null;
+  }, [clienteId, clientes]);
 
   const handleFormSubmit = (data: Omit<Pago, "id">) => {
     if (!clienteSeleccionado) return;

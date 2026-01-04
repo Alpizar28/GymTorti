@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { AlertCircle, Database, DollarSign, Search, Users } from "lucide-react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import Image from "next/image";
+import { AlertCircle, Database, DollarSign, Lock, LogOut, Search, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { apiGet, apiSend } from "@/lib/api";
+import { apiGet, apiLogin, apiSend, getAuthToken, setAuthToken } from "@/lib/api";
 import type {
   ClientCreateRequest,
   ClientResponse,
@@ -33,7 +34,13 @@ type ClienteExtras = Pick<Cliente, "contactoEmergencia">;
 const LS_CLIENT_EXTRAS = "mastergym-client-extras";
 const colones = new Intl.NumberFormat("es-CR", { style: "currency", currency: "CRC", maximumFractionDigits: 0 });
 
-const HEADER_IMAGE = gymLogo.src;
+const HEADER_IMAGE = gymLogo;
+
+function friendlyError(err: unknown) {
+  if (err instanceof Error && err.message) return err.message;
+  if (typeof err === "string") return err;
+  return "Error inesperado";
+}
 
 function safeReadJson<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
@@ -53,6 +60,34 @@ function safeWriteJson(key: string, value: unknown) {
 
 function ymd(date: Date) {
   return date.toISOString().split("T")[0];
+}
+
+function parseLocalDate(value: string): Date | null {
+  if (!value) return null;
+  const dateOnly = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (dateOnly) {
+    const year = Number(dateOnly[1]);
+    const month = Number(dateOnly[2]) - 1;
+    const day = Number(dateOnly[3]);
+    return new Date(year, month, day);
+  }
+  const dateTime = value.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/);
+  if (dateTime) {
+    const year = Number(dateTime[1]);
+    const month = Number(dateTime[2]) - 1;
+    const day = Number(dateTime[3]);
+    const hour = Number(dateTime[4]);
+    const minute = Number(dateTime[5]);
+    const second = Number(dateTime[6] ?? "0");
+    return new Date(year, month, day, hour, minute, second);
+  }
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed;
+}
+
+function monthKey(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
 function computeEstado(backendStatus: ClientStatus, fechaVencimiento?: string | null): Cliente["estado"] {
@@ -124,19 +159,30 @@ function tipoPagoFromPayment(paymentType?: PaymentType, notes?: string | null): 
 }
 
 export function FigmaApp({ defaultTab }: { defaultTab?: "clientes" | "pagos" | "mediciones" }) {
+  const [authToken, setAuthTokenState] = useState<string | null>(null);
+  const [authReady, setAuthReady] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [loginForm, setLoginForm] = useState({ username: "", password: "" });
+  const [loginLoading, setLoginLoading] = useState(false);
   const [backendClients, setBackendClients] = useState<ClientResponse[]>([]);
   const [backendPayments, setBackendPayments] = useState<PaymentResponse[]>([]);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [uiError, setUiError] = useState<string | null>(null);
   const [backupNotice, setBackupNotice] = useState<{ title: string; message: string } | null>(null);
   const [lastBackupAt, setLastBackupAt] = useState<string | null>(null);
   const [backupLoading, setBackupLoading] = useState(false);
+  const [backupConfirmOpen, setBackupConfirmOpen] = useState(false);
 
   const [clientExtras, setClientExtras] = useState<Record<string, ClienteExtras>>({});
   const [mediciones, setMediciones] = useState<Medicion[]>([]);
 
   const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    const stored = getAuthToken();
+    if (stored) setAuthTokenState(stored);
+    setAuthReady(true);
+  }, []);
 
   useEffect(() => {
     setClientExtras(safeReadJson<Record<string, ClienteExtras>>(LS_CLIENT_EXTRAS, {}));
@@ -148,7 +194,6 @@ export function FigmaApp({ defaultTab }: { defaultTab?: "clientes" | "pagos" | "
   }, [clientExtras]);
 
   async function loadAll() {
-    setLoading(true);
     setError(null);
     try {
       const [clientsPage, paymentsPage, measurementsPage] = await Promise.all([
@@ -177,16 +222,56 @@ export function FigmaApp({ defaultTab }: { defaultTab?: "clientes" | "pagos" | "
         }))
       );
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Error cargando datos";
-      setError(msg);
+      const msg = friendlyError(err) || "Error cargando datos";
+      if (msg.includes(" 401 ") || msg.includes("401") || msg.includes(" 403 ") || msg.includes("403")) {
+        setAuthToken(null);
+        setAuthTokenState(null);
+        setAuthError("Sesión expirada o credenciales inválidas.");
+      } else {
+        setError(msg);
+      }
     } finally {
-      setLoading(false);
     }
   }
 
+  async function handleLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const username = loginForm.username.trim();
+    const password = loginForm.password;
+    if (!username || !password) {
+      setAuthError("Usuario y contraseña son obligatorios.");
+      return;
+    }
+    setLoginLoading(true);
+    setAuthError(null);
+    try {
+      const response = await apiLogin(username, password);
+      setAuthToken(response.token);
+      setAuthTokenState(response.token);
+      setLoginForm({ username: "", password: "" });
+    } catch (err) {
+      const msg = friendlyError(err);
+      setAuthError(
+        msg.includes(" 401 ") || msg.includes("401") || msg.includes(" 403 ") || msg.includes("403")
+          ? "Usuario o contraseña incorrectos."
+          : msg
+      );
+    } finally {
+      setLoginLoading(false);
+    }
+  }
+
+  function handleLogout() {
+    setAuthToken(null);
+    setAuthTokenState(null);
+    setError(null);
+    setUiError(null);
+  }
+
   useEffect(() => {
+    if (!authToken) return;
     loadAll();
-  }, []);
+  }, [authToken]);
 
   const latestPaymentByClient = useMemo(() => {
     const map = new Map<string, PaymentResponse>();
@@ -257,13 +342,14 @@ export function FigmaApp({ defaultTab }: { defaultTab?: "clientes" | "pagos" | "
   const clientesPorVencer = clientesAll.filter((c) => c.estado === "por-vencer").length;
   const clientesInactivos = clientesAll.filter((c) => c.estado === "inactivo").length;
 
-  const ingresosMes = pagosAll
-    .filter((p) => {
-      const pagoDate = new Date(p.fecha);
-      const now = new Date();
-      return pagoDate.getMonth() === now.getMonth() && pagoDate.getFullYear() === now.getFullYear();
-    })
-    .reduce((sum, p) => sum + p.monto, 0);
+  const now = new Date();
+  const currentMonthKey = monthKey(now);
+  const pagosConFecha = pagosAll
+    .map((p) => ({ ...p, parsedFecha: parseLocalDate(p.fecha) }))
+    .filter((p) => p.parsedFecha !== null) as (Pago & { parsedFecha: Date })[];
+  const pagosMesActual = pagosConFecha.filter((p) => monthKey(p.parsedFecha) === currentMonthKey);
+  const pagosFallback = pagosMesActual.length > 0 ? pagosMesActual : pagosConFecha;
+  const ingresosMes = pagosFallback.reduce((sum, p) => sum + p.monto, 0);
 
   async function handleCreateCliente(cliente: ClienteFormData) {
     setError(null);
@@ -410,10 +496,14 @@ export function FigmaApp({ defaultTab }: { defaultTab?: "clientes" | "pagos" | "
     await loadAll();
   }
 
-  async function handleBackup() {
+  function openBackupConfirm() {
     if (backupLoading) return;
-    const ok = confirm("Deseas iniciar el respaldo en la nube ahora?");
-    if (!ok) return;
+    setBackupConfirmOpen(true);
+  }
+
+  async function handleBackupConfirm() {
+    if (backupLoading) return;
+    setBackupConfirmOpen(false);
     setBackupLoading(true);
     try {
       const token = process.env.NEXT_PUBLIC_BACKUP_TOKEN?.trim();
@@ -440,6 +530,65 @@ export function FigmaApp({ defaultTab }: { defaultTab?: "clientes" | "pagos" | "
     } finally {
       setBackupLoading(false);
     }
+  }
+
+  if (!authReady) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6 text-gray-600">
+        Cargando...
+      </div>
+    );
+  }
+
+  if (!authToken) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+        <div className="mx-auto flex min-h-[70vh] max-w-md items-center">
+          <Card className="w-full overflow-hidden rounded-3xl border-none shadow-xl">
+            <CardHeader className="border-b bg-gradient-to-r from-gray-50 to-white">
+              <div className="flex items-center gap-3">
+                <div className="rounded-2xl bg-gradient-to-br from-[#ff5e62] to-[#ff9966] p-3">
+                  <Lock className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl font-black text-gray-900">Acceso al gimnasio</CardTitle>
+                  <p className="text-sm text-gray-600">Ingresa tus credenciales para continuar</p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-6">
+              <form className="space-y-4" onSubmit={handleLogin}>
+                <Input
+                  placeholder="Usuario"
+                  value={loginForm.username}
+                  onChange={(e) => setLoginForm((prev) => ({ ...prev, username: e.target.value }))}
+                  className="rounded-xl"
+                />
+                <Input
+                  type="password"
+                  placeholder="Contraseña"
+                  value={loginForm.password}
+                  onChange={(e) => setLoginForm((prev) => ({ ...prev, password: e.target.value }))}
+                  className="rounded-xl"
+                />
+                {authError && (
+                  <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                    {authError}
+                  </div>
+                )}
+                <Button
+                  type="submit"
+                  className="w-full rounded-xl bg-gradient-to-r from-[#ff5e62] to-[#ff9966] text-white shadow-lg"
+                  disabled={loginLoading}
+                >
+                  {loginLoading ? "Ingresando..." : "Ingresar"}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -470,12 +619,34 @@ export function FigmaApp({ defaultTab }: { defaultTab?: "clientes" | "pagos" | "
           </div>
         </DialogContent>
       </Dialog>
+      <Dialog open={backupConfirmOpen} onOpenChange={setBackupConfirmOpen}>
+        <DialogContent className="max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>Confirmar respaldo</DialogTitle>
+            <DialogDescription>
+              Se guardara una copia en la nube. Durante el proceso la app puede tardar unos segundos.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setBackupConfirmOpen(false)} className="rounded-xl">
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleBackupConfirm}
+              disabled={backupLoading}
+              className="rounded-xl bg-gradient-to-r from-[#ff5e62] to-[#ff9966] text-white"
+            >
+              {backupLoading ? "Respaldando..." : "Iniciar respaldo"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       <div className="bg-gradient-to-r from-[#ff5e62] to-[#ff9966] shadow-xl">
         <div className="container mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="rounded-2xl bg-white p-3 shadow-lg">
-                <img src={HEADER_IMAGE} alt="MasterGym Logo" className="h-12 w-12 rounded-xl object-cover" />
+                <Image src={HEADER_IMAGE} alt="MasterGym Logo" width={48} height={48} className="h-12 w-12 rounded-xl object-cover" />
               </div>
               <div>
                 <h1 className="font-black tracking-tight text-white" style={{ fontSize: "2rem" }}>
@@ -498,12 +669,19 @@ export function FigmaApp({ defaultTab }: { defaultTab?: "clientes" | "pagos" | "
                 </Badge>
               )}
               <Button
-                onClick={handleBackup}
+                onClick={openBackupConfirm}
                 disabled={backupLoading}
                 className="rounded-xl bg-white px-4 py-2 text-[#ff5e62] shadow-md transition hover:bg-white/90 disabled:opacity-70"
               >
                 <Database className="mr-2 h-4 w-4" />
                 {backupLoading ? "Respaldando..." : "Respaldar"}
+              </Button>
+              <Button
+                onClick={handleLogout}
+                className="rounded-xl bg-white px-4 py-2 text-[#ff5e62] shadow-md transition hover:bg-white/90"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Salir
               </Button>
               {lastBackupAt && (
                 <span className="text-sm text-white/90">
@@ -624,8 +802,6 @@ export function FigmaApp({ defaultTab }: { defaultTab?: "clientes" | "pagos" | "
             <ClientesTab
               clientes={clientesFiltrados}
               allClientes={clientesAll}
-              pagos={pagosAll}
-              mediciones={mediciones}
               onCreateCliente={handleCreateCliente}
               onUpdateCliente={handleUpdateCliente}
               onDeleteCliente={handleDeleteCliente}
