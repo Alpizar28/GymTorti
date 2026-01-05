@@ -18,13 +18,20 @@ interface PagoFormProps {
 
 const colones = new Intl.NumberFormat("es-CR", { style: "currency", currency: "CRC", maximumFractionDigits: 0 });
 
+function localDateValue(date = new Date()) {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
 export function PagoForm({ onSubmit, onCancel, clientes }: PagoFormProps) {
-  const today = new Date().toISOString().split("T")[0];
+  const today = localDateValue();
   const { register, handleSubmit, setValue, control, formState } = useForm<Omit<Pago, "id">>({
     defaultValues: {
       clienteId: "",
       monto: 0,
-      fecha: new Date().toISOString().split("T")[0],
+      fecha: localDateValue(),
       tipoPago: "mensual",
       metodoPago: "efectivo",
       referencia: "",

@@ -11,6 +11,7 @@ public class ClientResponse {
     private Long gymId;
     private String nombre;
     private String apellido;
+    private String cedula;
     private String telefono;
     private String email;
     private ClientStatus estado;
@@ -22,7 +23,7 @@ public class ClientResponse {
     public ClientResponse() {
     }
 
-    public ClientResponse(Long id, Long gymId, String nombre, String apellido,
+    public ClientResponse(Long id, Long gymId, String nombre, String apellido, String cedula,
                           String telefono, String email,
                           ClientStatus estado, OffsetDateTime fechaRegistro,
                           LocalDate fechaInicioMembresia, LocalDate fechaVencimiento, String notas) {
@@ -30,6 +31,7 @@ public class ClientResponse {
         this.gymId = gymId;
         this.nombre = nombre;
         this.apellido = apellido;
+        this.cedula = cedula;
         this.telefono = telefono;
         this.email = email;
         this.estado = estado;
@@ -53,6 +55,10 @@ public class ClientResponse {
 
     public String getApellido() {
         return apellido;
+    }
+
+    public String getCedula() {
+        return cedula;
     }
 
     public String getTelefono() {
@@ -97,6 +103,10 @@ public class ClientResponse {
 
     public void setApellido(String apellido) {
         this.apellido = apellido;
+    }
+
+    public void setCedula(String cedula) {
+        this.cedula = cedula;
     }
 
     public void setTelefono(String telefono) {

@@ -37,6 +37,7 @@ public class ClientService {
                 gymId,
                 request.getNombre(),
                 request.getApellido(),
+                request.getCedula(),
                 request.getTelefono(),
                 request.getEmail(),
                 request.getNotas()
@@ -77,6 +78,7 @@ public class ClientService {
             entity.setNombre(nombre);
         }
         if (request.getApellido() != null) entity.setApellido(blankToNull(request.getApellido()));
+        if (request.getCedula() != null) entity.setCedula(blankToNull(request.getCedula()));
         if (request.getTelefono() != null) entity.setTelefono(blankToNull(request.getTelefono()));
         if (request.getEmail() != null) entity.setEmail(blankToNull(request.getEmail()));
         if (request.getNotas() != null) entity.setNotas(blankToNull(request.getNotas()));
@@ -104,6 +106,7 @@ public class ClientService {
                 var orPredicates = new java.util.ArrayList<jakarta.persistence.criteria.Predicate>();
                 orPredicates.add(cb.like(cb.lower(root.get("nombre")), q));
                 orPredicates.add(cb.like(cb.lower(cb.coalesce(root.get("apellido"), "")), q));
+                orPredicates.add(cb.like(cb.lower(cb.coalesce(root.get("cedula"), "")), q));
                 orPredicates.add(cb.like(cb.lower(cb.coalesce(root.get("telefono"), "")), q));
                 orPredicates.add(cb.like(cb.lower(cb.coalesce(root.get("email"), "")), q));
                 orPredicates.add(cb.like(cb.lower(root.get("estado").as(String.class)), q));
@@ -120,6 +123,7 @@ public class ClientService {
                 e.getGymId(),
                 e.getNombre(),
                 e.getApellido(),
+                e.getCedula(),
                 e.getTelefono(),
                 e.getEmail(),
                 e.getEstado(),
@@ -156,6 +160,7 @@ public class ClientService {
         Map<String, Object> details = new LinkedHashMap<>();
         details.put("nombre", client.getNombre());
         if (client.getApellido() != null) details.put("apellido", client.getApellido());
+        if (client.getCedula() != null) details.put("cedula", client.getCedula());
         if (client.getTelefono() != null) details.put("telefono", client.getTelefono());
         if (client.getEmail() != null) details.put("email", client.getEmail());
         details.put("estado", client.getEstado());

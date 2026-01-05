@@ -90,6 +90,15 @@ function monthKey(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
+function buildPhone(codigo: string, numero: string) {
+  const digitsCode = codigo.replace(/\D/g, "");
+  const digitsNumber = numero.replace(/\D/g, "");
+  if (!digitsCode && !digitsNumber) return "";
+  if (!digitsCode) return digitsNumber;
+  if (!digitsNumber) return `+${digitsCode}`;
+  return `+${digitsCode}${digitsNumber}`;
+}
+
 function computeEstado(backendStatus: ClientStatus, fechaVencimiento?: string | null): Cliente["estado"] {
   if (backendStatus === "INACTIVO") return "inactivo";
   if (backendStatus === "MOROSO") return "vencido";
@@ -298,6 +307,7 @@ export function FigmaApp({ defaultTab }: { defaultTab?: "clientes" | "pagos" | "
         id,
         nombre: c.nombre,
         apellido: c.apellido ?? "",
+        cedula: c.cedula ?? "",
         email: c.email ?? "",
         telefono: c.telefono ?? "",
         fechaInicio,
@@ -331,6 +341,7 @@ export function FigmaApp({ defaultTab }: { defaultTab?: "clientes" | "pagos" | "
       (cliente) =>
         cliente.nombre.toLowerCase().includes(query) ||
         cliente.apellido.toLowerCase().includes(query) ||
+        (cliente.cedula ? cliente.cedula.includes(query) : false) ||
         cliente.email.toLowerCase().includes(query) ||
         cliente.telefono.includes(query) ||
         cliente.estado.toLowerCase().includes(query)
@@ -356,7 +367,8 @@ export function FigmaApp({ defaultTab }: { defaultTab?: "clientes" | "pagos" | "
     const request: ClientCreateRequest = {
       nombre: cliente.nombre,
       apellido: cliente.apellido,
-      telefono: cliente.telefono,
+      cedula: cliente.cedula,
+      telefono: buildPhone(cliente.telefonoCodigo, cliente.telefonoNumero),
       email: cliente.email,
       notas: cliente.observaciones,
     };
@@ -378,7 +390,8 @@ export function FigmaApp({ defaultTab }: { defaultTab?: "clientes" | "pagos" | "
     const request: ClientUpdateRequest = {
       nombre: cliente.nombre,
       apellido: cliente.apellido,
-      telefono: cliente.telefono,
+      cedula: cliente.cedula,
+      telefono: buildPhone(cliente.telefonoCodigo, cliente.telefonoNumero),
       email: cliente.email,
       notas: cliente.observaciones,
     };
@@ -406,17 +419,6 @@ export function FigmaApp({ defaultTab }: { defaultTab?: "clientes" | "pagos" | "
     });
 
     await loadAll();
-  }
-
-  async function handleSendReminder(clienteId: string) {
-    setError(null);
-    try {
-      await apiSend<void>(`/api/clients/${Number(clienteId)}/reminder`, "POST");
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Error enviando recordatorio";
-      setError(msg);
-      throw err;
-    }
   }
 
   async function handleCreatePago(pago: Omit<Pago, "id">) {
@@ -805,7 +807,6 @@ export function FigmaApp({ defaultTab }: { defaultTab?: "clientes" | "pagos" | "
               onCreateCliente={handleCreateCliente}
               onUpdateCliente={handleUpdateCliente}
               onDeleteCliente={handleDeleteCliente}
-              onSendReminder={handleSendReminder}
               onRefresh={loadAll}
             />
           </TabsContent>

@@ -20,6 +20,7 @@ public class ClientEntity {
     private String nombre;
 
     private String apellido;
+    private String cedula;
     private String telefono;
     private String email;
 
@@ -41,11 +42,12 @@ public class ClientEntity {
     public ClientEntity() {
     }
 
-    public ClientEntity(Long gymId, String nombre, String apellido,
+    public ClientEntity(Long gymId, String nombre, String apellido, String cedula,
                         String telefono, String email, String notas) {
         this.gymId = gymId;
         this.nombre = nombre;
         this.apellido = apellido;
+        this.cedula = cedula;
         this.telefono = telefono;
         this.email = email;
         this.notas = notas;
@@ -81,6 +83,14 @@ public class ClientEntity {
 
     public void setApellido(String apellido) {
         this.apellido = apellido;
+    }
+
+    public String getCedula() {
+        return cedula;
+    }
+
+    public void setCedula(String cedula) {
+        this.cedula = cedula;
     }
 
     public String getTelefono() {

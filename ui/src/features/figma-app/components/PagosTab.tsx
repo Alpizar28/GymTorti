@@ -64,6 +64,7 @@ function isoDateFromDate(date: Date) {
 
 export function PagosTab({ pagos, onCreatePago, onDeletePago, clientes }: PagosTabProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [paymentFormKey, setPaymentFormKey] = useState(0);
   const [tablePage, setTablePage] = useState(0);
   const [periodDays, setPeriodDays] = useState(DEFAULT_PERIOD_DAYS);
   const [periodPreset, setPeriodPreset] = useState<PeriodPreset>(resolvePreset(DEFAULT_PERIOD_DAYS));
@@ -80,6 +81,12 @@ export function PagosTab({ pagos, onCreatePago, onDeletePago, clientes }: PagosT
       await onDeletePago(id);
     }
   };
+
+  useEffect(() => {
+    if (dialogOpen) {
+      setPaymentFormKey((prev) => prev + 1);
+    }
+  }, [dialogOpen]);
 
   useEffect(() => {
     try {
@@ -371,7 +378,12 @@ export function PagosTab({ pagos, onCreatePago, onDeletePago, clientes }: PagosT
                     <DialogTitle className="text-2xl">Nuevo Pago</DialogTitle>
                     <DialogDescription>Registra un nuevo pago de membresía</DialogDescription>
                   </DialogHeader>
-                  <PagoForm onSubmit={handleAddPago} onCancel={() => setDialogOpen(false)} clientes={clientes} />
+                  <PagoForm
+                    key={paymentFormKey}
+                    onSubmit={handleAddPago}
+                    onCancel={() => setDialogOpen(false)}
+                    clientes={clientes}
+                  />
                 </DialogContent>
               </Dialog>
             </div>

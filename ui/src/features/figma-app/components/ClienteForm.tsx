@@ -13,28 +13,44 @@ interface ClienteFormProps {
   initialData?: Cliente;
 }
 
+function splitPhone(value?: string | null) {
+  const digits = value ? value.replace(/\D/g, "") : "";
+  if (!digits) return { code: "506", number: "" };
+  if (digits.length <= 8) return { code: "506", number: digits };
+  return {
+    code: digits.slice(0, digits.length - 8),
+    number: digits.slice(-8),
+  };
+}
+
 export function ClienteForm({ onSubmit, onCancel, initialData }: ClienteFormProps) {
-  const { register, handleSubmit, formState } = useForm<ClienteFormData>({
+  const phoneDefaults = splitPhone(initialData?.telefono ?? "");
+  const { register, handleSubmit, formState, getValues } = useForm<ClienteFormData>({
     defaultValues: initialData
       ? {
           nombre: initialData.nombre,
           apellido: initialData.apellido,
+          cedula: initialData.cedula ?? "",
           email: initialData.email,
-          telefono: initialData.telefono,
+          telefonoCodigo: phoneDefaults.code,
+          telefonoNumero: phoneDefaults.number,
           contactoEmergencia: initialData.contactoEmergencia ?? "",
           observaciones: initialData.observaciones ?? "",
         }
       : {
           nombre: "",
           apellido: "",
+          cedula: "",
           email: "",
-          telefono: "",
+          telefonoCodigo: "506",
+          telefonoNumero: "",
           contactoEmergencia: "",
           observaciones: "",
         },
   });
 
   const { errors } = formState;
+  const telefonoError = errors.telefonoCodigo?.message || errors.telefonoNumero?.message;
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -50,7 +66,7 @@ export function ClienteForm({ onSubmit, onCancel, initialData }: ClienteFormProp
           <Input
             id="apellido"
             {...register("apellido", { required: "El apellido es requerido" })}
-            placeholder="Pérez"
+            placeholder="Perez"
             className="rounded-xl"
           />
           {errors.apellido && <p className="text-sm text-red-600">{errors.apellido.message}</p>}
@@ -59,7 +75,24 @@ export function ClienteForm({ onSubmit, onCancel, initialData }: ClienteFormProp
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="email">Correo Electrónico *</Label>
+          <Label htmlFor="cedula">Cedula *</Label>
+          <Input
+            id="cedula"
+            inputMode="numeric"
+            maxLength={9}
+            {...register("cedula", {
+              required: "La cedula es requerida",
+              pattern: { value: /^\d{9}$/, message: "La cedula debe tener 9 digitos" },
+              setValueAs: (value) => (typeof value === "string" ? value.replace(/\D/g, "") : value),
+            })}
+            placeholder="102030405"
+            className="rounded-xl"
+          />
+          {errors.cedula && <p className="text-sm text-red-600">{errors.cedula.message}</p>}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="email">Correo Electronico *</Label>
           <Input
             id="email"
             type="email"
@@ -68,7 +101,7 @@ export function ClienteForm({ onSubmit, onCancel, initialData }: ClienteFormProp
               setValueAs: (value) => (typeof value === "string" ? value.trim() : value),
               pattern: {
                 value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                message: "Correo inválido",
+                message: "Correo invalido",
               },
             })}
             placeholder="juan@ejemplo.com"
@@ -76,17 +109,44 @@ export function ClienteForm({ onSubmit, onCancel, initialData }: ClienteFormProp
           />
           {errors.email && <p className="text-sm text-red-600">{errors.email.message}</p>}
         </div>
+      </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="telefono">Teléfono *</Label>
+      <div className="space-y-2">
+        <Label htmlFor="telefonoNumero">Telefono *</Label>
+        <div className="flex gap-2">
           <Input
-            id="telefono"
-            {...register("telefono", { required: "El teléfono es requerido" })}
-            placeholder="+506 8888 8888"
-            className="rounded-xl"
+            id="telefonoCodigo"
+            inputMode="numeric"
+            maxLength={4}
+            {...register("telefonoCodigo", {
+              required: "El codigo es requerido",
+              pattern: { value: /^\d{1,4}$/, message: "Codigo invalido" },
+              setValueAs: (value) => (typeof value === "string" ? value.replace(/\D/g, "") : value),
+            })}
+            placeholder="506"
+            className="w-24 rounded-xl"
           />
-          {errors.telefono && <p className="text-sm text-red-600">{errors.telefono.message}</p>}
+          <Input
+            id="telefonoNumero"
+            inputMode="numeric"
+            maxLength={12}
+            {...register("telefonoNumero", {
+              required: "El telefono es requerido",
+              pattern: { value: /^\d{7,10}$/, message: "Telefono invalido" },
+              setValueAs: (value) => (typeof value === "string" ? value.replace(/\D/g, "") : value),
+              validate: () => {
+                const codigo = getValues("telefonoCodigo").replace(/\D/g, "");
+                const numero = getValues("telefonoNumero").replace(/\D/g, "");
+                const total = `${codigo}${numero}`.length;
+                if (total < 8 || total > 15) return "Telefono invalido";
+                return true;
+              },
+            })}
+            placeholder="88888888"
+            className="flex-1 rounded-xl"
+          />
         </div>
+        {telefonoError && <p className="text-sm text-red-600">{telefonoError}</p>}
       </div>
 
       <div className="space-y-2">
@@ -94,7 +154,7 @@ export function ClienteForm({ onSubmit, onCancel, initialData }: ClienteFormProp
         <Input
           id="contactoEmergencia"
           {...register("contactoEmergencia")}
-          placeholder="Nombre y teléfono: María Pérez - 8888 8888"
+          placeholder="Nombre y telefono: Maria Perez - 8888 8888"
           className="rounded-xl"
         />
       </div>
@@ -104,7 +164,7 @@ export function ClienteForm({ onSubmit, onCancel, initialData }: ClienteFormProp
         <Textarea
           id="observaciones"
           {...register("observaciones")}
-          placeholder="Notas adicionales, condiciones médicas, objetivos, etc."
+          placeholder="Notas adicionales, condiciones medicas, objetivos, etc."
           className="min-h-[100px] rounded-xl"
         />
       </div>

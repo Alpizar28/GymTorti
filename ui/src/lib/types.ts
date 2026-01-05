@@ -102,6 +102,7 @@ export type ClientResponse = {
   gymId: number;
   nombre: string;
   apellido?: string | null;
+  cedula?: string | null;
   telefono?: string | null;
   email?: string | null;
   estado: ClientStatus;
@@ -114,7 +115,8 @@ export type ClientResponse = {
 export type ClientCreateRequest = {
   nombre: string;
   apellido?: string;
-  telefono?: string;
+  cedula: string;
+  telefono: string;
   email?: string;
   notas?: string;
 };
@@ -122,6 +124,7 @@ export type ClientCreateRequest = {
 export type ClientUpdateRequest = {
   nombre?: string | null;
   apellido?: string | null;
+  cedula?: string | null;
   telefono?: string | null;
   email?: string | null;
   notas?: string | null;

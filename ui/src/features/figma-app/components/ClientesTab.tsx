@@ -16,7 +16,6 @@ interface ClientesTabProps {
   onCreateCliente: (cliente: ClienteFormData) => void | Promise<void>;
   onUpdateCliente: (clienteId: string, cliente: ClienteFormData) => void | Promise<void>;
   onDeleteCliente: (clienteId: string) => void | Promise<void>;
-  onSendReminder: (clienteId: string) => void | Promise<void>;
   onRefresh: () => void | Promise<void>;
 }
 
@@ -26,7 +25,6 @@ export function ClientesTab({
   onCreateCliente,
   onUpdateCliente,
   onDeleteCliente,
-  onSendReminder,
   onRefresh,
 }: ClientesTabProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -51,15 +49,51 @@ export function ClientesTab({
     }
   };
 
-  const handleEnviarRecordatorio = async (clienteId: string) => {
+  const handleEnviarRecordatorio = (clienteId: string) => {
     const cliente = allClientes.find((c) => c.id === clienteId);
     if (!cliente) return;
-    try {
-      await onSendReminder(clienteId);
-      alert(`Recordatorio enviado a ${cliente.nombre} ${cliente.apellido}\nTeléfono: ${cliente.telefono}\nCorreo: ${cliente.email}`);
-    } catch {
-      // Error is surfaced by the global error banner.
+    const phone = normalizePhone(cliente.telefono);
+    if (!phone) {
+      alert("El cliente no tiene telefono valido registrado.");
+      return;
     }
+    const nombreCompleto = `${cliente.nombre} ${cliente.apellido ?? ""}`.trim();
+    const hasVencimiento = Boolean(cliente.fechaVencimiento);
+    const vencimiento = hasVencimiento ? new Date(cliente.fechaVencimiento!).toLocaleDateString("es-CR") : "";
+    let message = "";
+    switch (cliente.estado) {
+      case "vencido":
+        message = hasVencimiento
+          ? `Hola ${nombreCompleto}, tu membresia vencio el ${vencimiento}. Si deseas renovarla, escribinos.`
+          : `Hola ${nombreCompleto}, tu membresia esta vencida. Si deseas renovarla, escribinos.`;
+        break;
+      case "por-vencer":
+        message = hasVencimiento
+          ? `Hola ${nombreCompleto}, tu membresia vence el ${vencimiento}. Si deseas renovarla, escribinos.`
+          : `Hola ${nombreCompleto}, tu membresia esta por vencer. Si deseas renovarla, escribinos.`;
+        break;
+      case "activo":
+        if (hasVencimiento) {
+          const hoy = new Date();
+          const diasRestantes = Math.max(
+            0,
+            Math.ceil((new Date(cliente.fechaVencimiento!).getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24))
+          );
+          const diasLabel = diasRestantes === 1 ? "dia" : "dias";
+          message = `Hola ${nombreCompleto}, te quedan ${diasRestantes} ${diasLabel} de membresia. Vence el ${vencimiento}. Si quieres renovarla con tiempo, escribinos.`;
+        } else {
+          message = `Hola ${nombreCompleto}, tu membresia esta activa. Si quieres actualizar la fecha de vencimiento, escribinos.`;
+        }
+        break;
+      case "inactivo":
+      default:
+        message = hasVencimiento
+          ? `Hola ${nombreCompleto}, tu membresia no esta activa y su ultima fecha fue ${vencimiento}. Si deseas reactivarla, escribinos.`
+          : `Hola ${nombreCompleto}, no tenemos una membresia activa registrada. Si deseas activarla, escribinos.`;
+        break;
+    }
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
   };
 
   const openEditDialog = (cliente: Cliente) => {
@@ -193,8 +227,10 @@ export function ClientesTab({
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
+              <Table
+                containerClassName="overflow-x-visible"
+                className="[&_td]:px-[15px] [&_td]:py-[11px] [&_th]:px-[15px] [&_th]:h-[39px]"
+              >
                 <TableHeader>
                   <TableRow className="bg-gray-50 hover:bg-gray-50">
                     <TableHead className="rounded-tl-3xl">Cliente</TableHead>
@@ -213,6 +249,7 @@ export function ClientesTab({
                             {cliente.nombre} {cliente.apellido}
                           </p>
                           <p className="text-sm text-gray-600">ID: {cliente.id}</p>
+                          <p className="text-sm text-gray-600">Cedula: {cliente.cedula || "--"}</p>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -277,7 +314,6 @@ export function ClientesTab({
                   ))}
                 </TableBody>
               </Table>
-            </div>
           )}
         </CardContent>
       </Card>
@@ -301,4 +337,16 @@ function UsersIcon() {
       <path d="M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
+}
+
+function normalizePhone(value?: string | null): string | null {
+  if (!value) return null;
+  let digits = value.replace(/\D/g, "");
+  if (!digits) return null;
+  digits = digits.replace(/^0+/, "");
+  if (digits.length === 8) {
+    digits = `506${digits}`;
+  }
+  if (digits.length < 8) return null;
+  return digits;
 }

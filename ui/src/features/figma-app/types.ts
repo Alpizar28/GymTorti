@@ -2,6 +2,7 @@ export interface Cliente {
   id: string;
   nombre: string;
   apellido: string;
+  cedula?: string;
   email: string;
   telefono: string;
   fechaInicio: string;
@@ -12,7 +13,16 @@ export interface Cliente {
   observaciones?: string;
 }
 
-export type ClienteFormData = Pick<Cliente, "nombre" | "apellido" | "email" | "telefono" | "contactoEmergencia" | "observaciones">;
+export type ClienteFormData = {
+  nombre: string;
+  apellido: string;
+  cedula: string;
+  email: string;
+  telefonoCodigo: string;
+  telefonoNumero: string;
+  contactoEmergencia?: string;
+  observaciones?: string;
+};
 
 export interface Pago {
   id: string;

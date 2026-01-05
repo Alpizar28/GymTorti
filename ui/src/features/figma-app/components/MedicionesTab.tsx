@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, Download, Eye, FileText, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, Download, Eye, FileText, MessageCircle, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -116,6 +116,27 @@ export function MedicionesTab({ mediciones, clientes, onCreateMedicion, onDelete
     }
   };
 
+  const handleShareReportWhatsApp = async (clienteId: string) => {
+    const cliente = clientes.find((c) => c.id === clienteId);
+    if (!cliente) return;
+    const phone = normalizePhone(cliente.telefono);
+    if (!phone) {
+      alert("El cliente no tiene telefono valido registrado.");
+      return;
+    }
+    const nombreCompleto = `${cliente.nombre} ${cliente.apellido ?? ""}`.trim();
+    const message = `Hola ${nombreCompleto}, te comparto tu reporte de mediciones. Te adjunto el PDF por aqui.`;
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    const waWindow = window.open(url, "_blank", "noopener,noreferrer");
+    try {
+      await handleDownloadClienteReport(clienteId);
+      if (waWindow) waWindow.focus();
+    } catch (err) {
+      console.error(err);
+      alert("No se pudo preparar el reporte para WhatsApp.");
+    }
+  };
+
   return (
     <>
       <Card className="overflow-hidden rounded-3xl border-none shadow-xl">
@@ -223,6 +244,16 @@ export function MedicionesTab({ mediciones, clientes, onCreateMedicion, onDelete
                             type="button"
                             variant="ghost"
                             size="sm"
+                            onClick={() => handleShareReportWhatsApp(group.cliente.id)}
+                            className="rounded-xl text-green-600 hover:bg-green-50 hover:text-green-700"
+                            aria-label="Enviar por WhatsApp"
+                          >
+                            <MessageCircle className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
                             onClick={() => toggleExpanded(group.cliente.id)}
                             className="rounded-xl text-gray-500 hover:bg-gray-100"
                           >
@@ -316,4 +347,16 @@ export function MedicionesTab({ mediciones, clientes, onCreateMedicion, onDelete
       )}
     </>
   );
+}
+
+function normalizePhone(value?: string | null): string | null {
+  if (!value) return null;
+  let digits = value.replace(/\D/g, "");
+  if (!digits) return null;
+  digits = digits.replace(/^0+/, "");
+  if (digits.length === 8) {
+    digits = `506${digits}`;
+  }
+  if (digits.length < 8) return null;
+  return digits;
 }
