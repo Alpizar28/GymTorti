@@ -8,6 +8,24 @@ Este documento describe la instalacion completa para entregar MasterGym en una P
 2) Node.js 20 (LTS)
 3) PostgreSQL 14+
 
+### Descargas oficiales
+
+- Java 21 (JDK): https://adoptium.net/temurin/releases/?version=21
+- Node.js 20 (LTS): https://nodejs.org/en/download
+- PostgreSQL 14+: https://www.postgresql.org/download/
+
+### Verificar versiones instaladas
+
+Abrir PowerShell y ejecutar:
+
+```
+java -version
+node -v
+psql --version
+```
+
+Debe mostrar Java 21, Node 20 y PostgreSQL 14+.
+
 ## Paso 1: Configurar la base de datos local
 
 1. Abrir PostgreSQL y crear una base de datos:
@@ -15,6 +33,16 @@ Este documento describe la instalacion completa para entregar MasterGym en una P
    - Nombre sugerido: mastergym_dev
 
 2. Tener un usuario y password (ej: postgres / tu_password).
+
+### Instalacion rapida de PostgreSQL (Windows)
+
+1. Descargar e instalar PostgreSQL desde el sitio oficial.
+2. Durante la instalacion, anotar el password del usuario postgres.
+3. Al finalizar, abrir "pgAdmin".
+4. Crear la base de datos:
+   - Click derecho en "Databases" -> Create -> Database...
+   - Name: mastergym_dev
+5. Confirmar que la base exista antes de iniciar MasterGym.
 
 ## Paso 2: Configurar variables del backend
 
@@ -70,6 +98,24 @@ Esto hace:
 
 - logs/backend.log
 - logs/ui.log
+
+## Solucion rapida de errores comunes
+
+1) No abre en el navegador:
+   - Asegurate de ejecutar el icono del escritorio.
+   - Revisa que no haya otra app usando los puertos 3000/8080.
+
+2) Error de base de datos:
+   - Verifica que PostgreSQL este encendido.
+   - Confirma usuario/password en backend/.env.
+   - Confirma que exista la base mastergym_dev.
+
+3) Error de login:
+   - Revisa APP_SECURITY_USERNAME y APP_SECURITY_PASSWORD en backend/.env.
+
+4) Error en respaldo:
+   - Revisa que APP_BACKUP_TOKEN y NEXT_PUBLIC_BACKUP_TOKEN sean iguales.
+   - Revisa logs/backend.log para el detalle.
 
 ## Notas
 
