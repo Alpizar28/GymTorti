@@ -49,13 +49,9 @@ En pgAdmin:
 
 ---
 
-## 2) Ejecutar BACKEND (Spring Boot)
+## 2) Instalacion manual (una sola vez)
 
-Abrir terminal en:
-
-```powershell
-cd .\backend
-Configurar variables (recomendado, evita credenciales hardcodeadas):
+1) Configurar variables del backend (recomendado, evita credenciales hardcodeadas):
 
 ```powershell
 $env:SPRING_DATASOURCE_URL="jdbc:postgresql://localhost:5432/mastergym_dev"
@@ -63,101 +59,33 @@ $env:SPRING_DATASOURCE_USERNAME="postgres"
 $env:SPRING_DATASOURCE_PASSWORD="TU_PASSWORD"
 ```
 
-Ejecutar:
+2) Build del frontend:
 
-powershell
-Copiar código
-.\gradlew.bat bootRun
-Backend corre en:
-
-http://localhost:8080
-
-Prueba rápida (Thunder/Postman):
-
-GET http://localhost:8080/api/clients?page=0&size=50
-Header: Authorization: Bearer <TOKEN>
-
-3) Ejecutar UI (Next.js)
-Abrir OTRA terminal en:
-
-powershell
-Copiar código
+```powershell
 cd .\ui
-Instalar dependencias (solo la primera vez):
-
-powershell
-Copiar código
 npm install
-Correr en modo dev:
+npm run build
+```
 
-powershell
-Copiar código
-npm run dev
-UI corre en:
+3) Build del backend:
 
-http://localhost:3000
+```powershell
+cd ..\backend
+.\gradlew.bat bootJar
+```
 
-Pantalla de clientes:
+4) Crear el icono del escritorio (toggle):
 
-http://localhost:3000/clients
+```powershell
+cd ..\
+powershell -ExecutionPolicy Bypass -File launcher\Create-DesktopShortcut.ps1
+```
 
-Variables de entorno (UI)
-Opcional: crear archivo ui/.env.local:
+## 3) Uso diario (cliente)
 
-env
-Copiar código
-NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
-Comandos útiles
-Backend
-Ejecutar:
-
-powershell
-Copiar código
-.\gradlew.bat bootRun
-Limpiar y ejecutar:
-
-powershell
-Copiar código
-.\gradlew.bat clean bootRun
-UI
-Instalar:
-
-powershell
-Copiar código
-npm install
-Dev server:
-
-powershell
-Copiar código
-npm run dev
-Problemas comunes
-UI no conecta con backend (Failed to fetch / CORS)
-Confirmar backend corriendo en localhost:8080
-
-Confirmar UI corriendo en localhost:3000
-
-Confirmar que el controller del backend permite CORS (temporalmente está abierto)
-
-Base de datos no conecta
-Verificar que PostgreSQL esté corriendo
-
-Revisar credenciales en:
-backend/src/main/resources/application.properties
-
-Versiones del ambiente (referencia)
-Java: openjdk 21.0.9 2025-10-21 LTS
-
-Gradle (wrapper): 9.2.1
-
-Node: v22.18.0 (o 20.x)
-
-npm: 10.9.3
-
-next: 16.0.10
-
-react: 19.2.1
-
-typescript: 5.9.3
+- Doble clic en el icono "MasterGym": enciende y abre el navegador.
+- Segundo clic: apaga la app.
+- Si no abre, revisar `logs/backend.log` y `logs/ui.log`.
 
 ---
 
