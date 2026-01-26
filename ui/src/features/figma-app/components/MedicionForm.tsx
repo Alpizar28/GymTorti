@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getPrimaryGradient } from "@/config/app.config";
 import type { Cliente, Medicion } from "../types";
 
 interface MedicionFormProps {
@@ -182,8 +183,8 @@ export function MedicionForm({ onSubmit, onCancel, clientes, mediciones }: Medic
         <Button type="button" variant="outline" onClick={onCancel} className="rounded-xl">
           Cancelar
         </Button>
-        <Button type="submit" className="rounded-xl bg-gradient-to-r from-[#ff5e62] to-[#ff9966] text-white shadow-lg">
-          Registrar Medición
+        <Button type="submit" className="rounded-xl text-white shadow-lg" style={{ background: getPrimaryGradient() }}>
+          Registrar Medicion
         </Button>
       </div>
     </form>

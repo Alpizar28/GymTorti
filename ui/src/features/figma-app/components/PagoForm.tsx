@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Cliente, Pago } from "../types";
+import { getPrimaryGradient } from "@/config/app.config";
 
 interface PagoFormProps {
   onSubmit: (data: Omit<Pago, "id">) => void;
@@ -44,11 +45,11 @@ export function PagoForm({ onSubmit, onCancel, clientes }: PagoFormProps) {
   const { errors } = formState;
 
   const montosRecomendados: Record<string, number> = {
-    diario: 1000,
-    mensual: 12500,
-    trimestral: 35000,
-    semestral: 65000,
-    anual: 120000,
+    diario: 2000,
+    mensual: 15000,
+    universidad: 11000,
+    colegio: 10000,
+    pareja: 25000,
   };
 
   const clienteSeleccionado = useMemo(() => {
@@ -115,10 +116,10 @@ export function PagoForm({ onSubmit, onCancel, clientes }: PagoFormProps) {
               <p className="font-bold text-gray-900">
                 {clienteSeleccionado.fechaVencimiento
                   ? new Date(clienteSeleccionado.fechaVencimiento).toLocaleDateString("es-CR", {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                    })
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                  })
                   : "Sin membresia"}
               </p>
             </div>
@@ -164,11 +165,11 @@ export function PagoForm({ onSubmit, onCancel, clientes }: PagoFormProps) {
             <SelectValue placeholder="Selecciona el tipo" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="diario">Diario (1 día) - {colones.format(1000)}</SelectItem>
-            <SelectItem value="mensual">Mensual (1 mes) - {colones.format(12500)}</SelectItem>
-            <SelectItem value="trimestral">Trimestral (3 meses) - {colones.format(35000)}</SelectItem>
-            <SelectItem value="semestral">Semestral (6 meses) - {colones.format(65000)}</SelectItem>
-            <SelectItem value="anual">Anual (12 meses) - {colones.format(120000)}</SelectItem>
+            <SelectItem value="diario">Sesion del dia - {colones.format(2000)}</SelectItem>
+            <SelectItem value="mensual">Mensualidad regular - {colones.format(15000)}</SelectItem>
+            <SelectItem value="universidad">Mensualidad universidad - {colones.format(11000)}</SelectItem>
+            <SelectItem value="colegio">Mensualidad colegio - {colones.format(10000)}</SelectItem>
+            <SelectItem value="pareja">Precio por pareja - {colones.format(25000)}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -202,7 +203,7 @@ export function PagoForm({ onSubmit, onCancel, clientes }: PagoFormProps) {
         <Button type="button" variant="outline" onClick={onCancel} className="rounded-xl">
           Cancelar
         </Button>
-        <Button type="submit" className="rounded-xl bg-gradient-to-r from-[#ff5e62] to-[#ff9966] text-white shadow-lg">
+        <Button type="submit" className="rounded-xl text-white shadow-lg" style={{ background: getPrimaryGradient() }}>
           Registrar Pago
         </Button>
       </div>

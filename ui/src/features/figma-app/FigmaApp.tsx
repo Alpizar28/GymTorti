@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { AlertCircle, Database, DollarSign, Lock, LogOut, Search, Users } from "lucide-react";
+import { AlertCircle, Database, DollarSign, Lock, LogOut, Moon, Search, Sun, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,9 +23,12 @@ import type {
   PaymentType,
   PaymentResponse,
 } from "@/lib/types";
+import { appConfig, getPrimaryGradient, themeColors } from "@/config/app.config";
 import { ClientesTab } from "./components/ClientesTab";
 import { MedicionesTab } from "./components/MedicionesTab";
 import { PagosTab } from "./components/PagosTab";
+import "./tabs-theme.css";
+import "@/styles/dark-mode.css";
 import gymLogo from "../../../recursos/logo.jpg";
 import type { Cliente, ClienteFormData, Medicion, Pago } from "./types";
 
@@ -132,13 +135,10 @@ function paymentTypeFromUi(tipoPago: Pago["tipoPago"]): PaymentType {
   switch (tipoPago) {
     case "diario":
       return "DAILY_MEMBERSHIP";
-    case "trimestral":
-      return "QUARTERLY_MEMBERSHIP";
-    case "semestral":
-      return "SEMESTER_MEMBERSHIP";
-    case "anual":
-      return "ANNUAL_MEMBERSHIP";
     case "mensual":
+    case "pareja":
+    case "universidad":
+    case "colegio":
     default:
       return "MONTHLY_MEMBERSHIP";
   }
@@ -149,19 +149,23 @@ function tipoPagoFromPayment(paymentType?: PaymentType, notes?: string | null): 
     case "DAILY_MEMBERSHIP":
       return "diario";
     case "QUARTERLY_MEMBERSHIP":
-      return "trimestral";
     case "SEMESTER_MEMBERSHIP":
-      return "semestral";
     case "ANNUAL_MEMBERSHIP":
-      return "anual";
+      return "mensual";
     case "MONTHLY_MEMBERSHIP":
     default:
       break;
   }
 
-  const match = notes?.match(/tipoPago:\\s*(diario|mensual|trimestral|semestral|anual)/i);
+  const match = notes?.match(/tipoPago:\\s*(diario|mensual|pareja|universidad|colegio)/i);
   const fromNotes = match?.[1]?.toLowerCase();
-  if (fromNotes === "diario" || fromNotes === "trimestral" || fromNotes === "semestral" || fromNotes === "anual" || fromNotes === "mensual") {
+  if (
+    fromNotes === "diario" ||
+    fromNotes === "mensual" ||
+    fromNotes === "pareja" ||
+    fromNotes === "universidad" ||
+    fromNotes === "colegio"
+  ) {
     return fromNotes as Pago["tipoPago"];
   }
   return "mensual";
@@ -186,6 +190,7 @@ export function FigmaApp({ defaultTab }: { defaultTab?: "clientes" | "pagos" | "
   const [mediciones, setMediciones] = useState<Medicion[]>([]);
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [uiMode, setUiMode] = useState<"light" | "dark">(appConfig.uiMode);
 
   useEffect(() => {
     const stored = getAuthToken();
@@ -201,6 +206,47 @@ export function FigmaApp({ defaultTab }: { defaultTab?: "clientes" | "pagos" | "
   useEffect(() => {
     safeWriteJson(LS_CLIENT_EXTRAS, clientExtras);
   }, [clientExtras]);
+
+  // Aplicar tema global (dark/light) a nivel de HTML/Body
+  useEffect(() => {
+    const root = document.documentElement;
+    const mode = uiMode;
+    const surfaces = appConfig.surfaces[mode];
+
+    // 1. Clase dark
+    if (mode === "dark") {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
+    }
+
+    // 2. Variables de colores neutros (Surfaces)
+    root.style.setProperty("--background", surfaces.background);
+    root.style.setProperty("--surface", surfaces.surface);
+    root.style.setProperty("--surface-hover", surfaces.surfaceHover);
+    root.style.setProperty("--border", surfaces.border);
+
+    // Mapeos para consistencia con shadcn y nuestro sistema
+    root.style.setProperty("--foreground", surfaces.text);         // shadcn standard
+    root.style.setProperty("--text", surfaces.text);               // nuestro standard legacy
+    root.style.setProperty("--muted-foreground", surfaces.textMuted); // shadcn standard
+    root.style.setProperty("--text-muted", surfaces.textMuted);    // nuestro standard legacy
+    root.style.setProperty("--border", surfaces.border);           // shadcn borders
+    root.style.setProperty("--input", surfaces.border);            // shadcn inputs border
+    root.style.setProperty("--input-background", surfaces.surface);// shadcn inputs bg
+    root.style.setProperty("--card", surfaces.surface);            // shadcn cards
+    root.style.setProperty("--card-foreground", surfaces.text);    // shadcn cards text
+    root.style.setProperty("--popover", surfaces.surface);         // shadcn popovers
+    root.style.setProperty("--popover-foreground", surfaces.text); // shadcn popovers text
+
+
+    // 3. Variables de colores primarios
+    root.style.setProperty("--theme-primary-from", appConfig.theme.primary.from);
+    root.style.setProperty("--theme-primary-to", appConfig.theme.primary.to);
+    root.style.setProperty("--theme-primary-solid", appConfig.theme.primary.solid);
+    root.style.setProperty("--theme-primary-hover", appConfig.theme.primary.hover);
+    root.style.setProperty("--theme-primary-active", appConfig.theme.primary.active);
+  }, [uiMode]);
 
   async function loadAll() {
     setError(null);
@@ -536,7 +582,7 @@ export function FigmaApp({ defaultTab }: { defaultTab?: "clientes" | "pagos" | "
 
   if (!authReady) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6 text-gray-600">
+      <div className="min-h-screen bg-background p-6 text-muted">
         Cargando...
       </div>
     );
@@ -544,17 +590,17 @@ export function FigmaApp({ defaultTab }: { defaultTab?: "clientes" | "pagos" | "
 
   if (!authToken) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+      <div className="min-h-screen bg-background p-6">
         <div className="mx-auto flex min-h-[70vh] max-w-md items-center">
-          <Card className="w-full overflow-hidden rounded-3xl border-none shadow-xl">
-            <CardHeader className="border-b bg-gradient-to-r from-gray-50 to-white">
+          <Card className="w-full overflow-hidden rounded-3xl border-border bg-surface shadow-xl">
+            <CardHeader className="border-b border-border bg-surface-hover">
               <div className="flex items-center gap-3">
-                <div className="rounded-2xl bg-gradient-to-br from-[#ff5e62] to-[#ff9966] p-3">
+                <div className="rounded-2xl p-3" style={{ background: getPrimaryGradient() }}>
                   <Lock className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <CardTitle className="text-xl font-black text-gray-900">Acceso al gimnasio</CardTitle>
-                  <p className="text-sm text-gray-600">Ingresa tus credenciales para continuar</p>
+                  <CardTitle className="text-xl font-black text-foreground">Acceso al gimnasio</CardTitle>
+                  <p className="text-sm text-muted">Ingresa tus credenciales para continuar</p>
                 </div>
               </div>
             </CardHeader>
@@ -580,7 +626,8 @@ export function FigmaApp({ defaultTab }: { defaultTab?: "clientes" | "pagos" | "
                 )}
                 <Button
                   type="submit"
-                  className="w-full rounded-xl bg-gradient-to-r from-[#ff5e62] to-[#ff9966] text-white shadow-lg"
+                  className="w-full rounded-xl text-white shadow-lg"
+                  style={{ background: getPrimaryGradient() }}
                   disabled={loginLoading}
                 >
                   {loginLoading ? "Ingresando..." : "Ingresar"}
@@ -594,7 +641,7 @@ export function FigmaApp({ defaultTab }: { defaultTab?: "clientes" | "pagos" | "
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-background text-foreground">
       <Dialog open={uiError !== null} onOpenChange={(open) => (!open ? setUiError(null) : null)}>
         <DialogContent className="max-w-md rounded-2xl">
           <DialogHeader>
@@ -602,7 +649,11 @@ export function FigmaApp({ defaultTab }: { defaultTab?: "clientes" | "pagos" | "
             <DialogDescription>{uiError}</DialogDescription>
           </DialogHeader>
           <div className="flex justify-end">
-            <Button onClick={() => setUiError(null)} className="rounded-xl bg-gradient-to-r from-[#ff5e62] to-[#ff9966] text-white">
+            <Button
+              onClick={() => setUiError(null)}
+              className="rounded-xl text-white"
+              style={{ background: getPrimaryGradient() }}
+            >
               Entendido
             </Button>
           </div>
@@ -615,7 +666,11 @@ export function FigmaApp({ defaultTab }: { defaultTab?: "clientes" | "pagos" | "
             <DialogDescription>{backupNotice?.message}</DialogDescription>
           </DialogHeader>
           <div className="flex justify-end">
-            <Button onClick={() => setBackupNotice(null)} className="rounded-xl bg-gradient-to-r from-[#ff5e62] to-[#ff9966] text-white">
+            <Button
+              onClick={() => setBackupNotice(null)}
+              className="rounded-xl text-white"
+              style={{ background: getPrimaryGradient() }}
+            >
               Entendido
             </Button>
           </div>
@@ -636,25 +691,31 @@ export function FigmaApp({ defaultTab }: { defaultTab?: "clientes" | "pagos" | "
             <Button
               onClick={handleBackupConfirm}
               disabled={backupLoading}
-              className="rounded-xl bg-gradient-to-r from-[#ff5e62] to-[#ff9966] text-white"
+              className="rounded-xl text-white"
+              style={{ background: getPrimaryGradient() }}
             >
               {backupLoading ? "Respaldando..." : "Iniciar respaldo"}
             </Button>
           </div>
         </DialogContent>
       </Dialog>
-      <div className="bg-gradient-to-r from-[#ff5e62] to-[#ff9966] shadow-xl">
+      <div
+        className="shadow-xl"
+        style={{
+          background: `linear-gradient(to right, ${appConfig.theme.primary.from}, ${appConfig.theme.primary.to})`
+        }}
+      >
         <div className="container mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="rounded-2xl bg-white p-3 shadow-lg">
-                <Image src={HEADER_IMAGE} alt="MasterGym Logo" width={48} height={48} className="h-12 w-12 rounded-xl object-cover" />
+                <Image src={HEADER_IMAGE} alt={`${appConfig.gymName} Logo`} width={48} height={48} className="h-12 w-12 rounded-xl object-cover" />
               </div>
               <div>
                 <h1 className="font-black tracking-tight text-white" style={{ fontSize: "2rem" }}>
-                  MasterGym
+                  {appConfig.gymName}
                 </h1>
-                <p className="text-white/90">Poder y Pasión</p>
+                <p className="text-white/90">{appConfig.gymTagline}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -665,22 +726,33 @@ export function FigmaApp({ defaultTab }: { defaultTab?: "clientes" | "pagos" | "
                 </Badge>
               )}
               {clientesVencidos > 0 && (
-                <Badge variant="destructive" className="flex items-center gap-2 bg-white px-4 py-2 text-[#ff5e62] hover:bg-white/90">
+                <Badge
+                  variant="destructive"
+                  className="flex items-center gap-2 bg-white px-4 py-2 text-gray-900 hover:bg-white/90"
+                >
                   <AlertCircle className="h-4 w-4" />
                   {clientesVencidos} vencida{clientesVencidos !== 1 ? "s" : ""}
                 </Badge>
               )}
               <Button
+                size="icon"
+                onClick={() => setUiMode(uiMode === "dark" ? "light" : "dark")}
+                className="h-10 w-10 rounded-xl bg-white text-gray-900 shadow-md transition hover:bg-white/90"
+                aria-label="Cambiar tema"
+              >
+                {uiMode === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+              </Button>
+              <Button
                 onClick={openBackupConfirm}
                 disabled={backupLoading}
-                className="rounded-xl bg-white px-4 py-2 text-[#ff5e62] shadow-md transition hover:bg-white/90 disabled:opacity-70"
+                className="rounded-xl bg-white px-4 py-2 text-gray-900 shadow-md transition hover:bg-white/90 disabled:opacity-70"
               >
                 <Database className="mr-2 h-4 w-4" />
                 {backupLoading ? "Respaldando..." : "Respaldar"}
               </Button>
               <Button
                 onClick={handleLogout}
-                className="rounded-xl bg-white px-4 py-2 text-[#ff5e62] shadow-md transition hover:bg-white/90"
+                className="rounded-xl bg-white px-4 py-2 text-gray-900 shadow-md transition hover:bg-white/90"
               >
                 <LogOut className="mr-2 h-4 w-4" />
                 Salir
@@ -695,7 +767,9 @@ export function FigmaApp({ defaultTab }: { defaultTab?: "clientes" | "pagos" | "
         </div>
       </div>
 
-      <div className="container mx-auto max-w-7xl p-6">
+      <div
+        className="container mx-auto max-w-7xl p-6"
+      >
         {error && (
           <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
             <p className="font-semibold">Error</p>
@@ -705,96 +779,96 @@ export function FigmaApp({ defaultTab }: { defaultTab?: "clientes" | "pagos" | "
 
         <div className="mb-6">
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+            <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" />
             <Input
               type="text"
               placeholder="Buscar clientes por nombre, teléfono, correo o estado..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-14 rounded-2xl border-none bg-white pl-12 text-lg shadow-lg"
+              className="h-14 rounded-2xl border-none bg-surface pl-12 text-lg text-foreground shadow-lg placeholder:text-muted"
             />
           </div>
           {searchQuery && (
-            <p className="ml-1 mt-2 text-sm text-gray-600">
+            <p className="ml-1 mt-2 text-sm text-muted">
               {clientesFiltrados.length} cliente{clientesFiltrados.length !== 1 ? "s" : ""} encontrado{clientesFiltrados.length !== 1 ? "s" : ""}
             </p>
           )}
         </div>
 
         <div className="mb-6 grid gap-4 md:grid-cols-3">
-          <Card className="border-none bg-gradient-to-br from-white to-gray-50 shadow-lg transition-all duration-300 hover:shadow-xl">
+          <Card className="border-border bg-surface shadow-lg transition-all duration-300 hover:shadow-xl">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm text-gray-600">Clientes Activos</CardTitle>
-              <div className="rounded-xl bg-gradient-to-br from-[#ff5e62] to-[#ff9966] p-2">
+              <CardTitle className="text-sm text-muted">Clientes Activos</CardTitle>
+              <div className="rounded-xl p-2" style={{ background: getPrimaryGradient() }}>
                 <Users className="h-5 w-5 text-white" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="font-black text-gray-900" style={{ fontSize: "2rem" }}>
+              <div className="font-black text-foreground" style={{ fontSize: "2rem" }}>
                 {clientesActivos}
               </div>
-              <p className="mt-2 text-sm text-gray-600">Activos + por vencer</p>
+              <p className="mt-2 text-sm text-muted">Activos + por vencer</p>
             </CardContent>
           </Card>
 
-          <Card className="border-none bg-gradient-to-br from-white to-gray-50 shadow-lg transition-all duration-300 hover:shadow-xl">
+          <Card className="border-border bg-surface shadow-lg transition-all duration-300 hover:shadow-xl">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm text-gray-600">Ingresos del Mes</CardTitle>
-              <div className="rounded-xl bg-gradient-to-br from-[#ff9966] to-[#ff5e62] p-2">
+              <CardTitle className="text-sm text-muted">Ingresos del Mes</CardTitle>
+              <div className="rounded-xl p-2" style={{ background: getPrimaryGradient() }}>
                 <DollarSign className="h-5 w-5 text-white" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="font-black text-gray-900" style={{ fontSize: "2rem" }}>
+              <div className="font-black text-foreground" style={{ fontSize: "2rem" }}>
                 {colones.format(ingresosMes)}
               </div>
-              <p className="mt-2 text-sm text-gray-600">Pagos registrados</p>
+              <p className="mt-2 text-sm text-muted">Pagos registrados</p>
             </CardContent>
           </Card>
 
-          <Card className="border-none bg-gradient-to-br from-white to-gray-50 shadow-lg transition-all duration-300 hover:shadow-xl">
+          <Card className="border-border bg-surface shadow-lg transition-all duration-300 hover:shadow-xl">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm text-gray-600">Clientes Inactivos</CardTitle>
-              <div className="rounded-xl bg-gradient-to-br from-[#ff9966] to-[#ff5e62] p-2">
+              <CardTitle className="text-sm text-muted">Clientes Inactivos</CardTitle>
+              <div className="rounded-xl p-2" style={{ background: getPrimaryGradient() }}>
                 <AlertCircle className="h-5 w-5 text-white" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="font-black text-gray-900" style={{ fontSize: "2rem" }}>
+              <div className="font-black text-foreground" style={{ fontSize: "2rem" }}>
                 {clientesInactivos}
               </div>
-              <p className="mt-2 text-sm text-gray-600">Sin membresia activa</p>
+              <p className="mt-2 text-sm text-muted">Sin membresia activa</p>
             </CardContent>
           </Card>
 
-                  </div>
+        </div>
 
         <Tabs defaultValue={defaultTab ?? "clientes"} className="space-y-6">
-          <TabsList className="h-auto overflow-visible rounded-2xl border-none bg-white p-1.5 shadow-md">
+          <TabsList className="h-auto overflow-visible rounded-2xl border-none bg-surface p-1.5 shadow-md">
             <TabsTrigger
               value="clientes"
-              className="group relative rounded-xl px-6 py-3 transition-all data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#ff5e62] data-[state=active]:to-[#ff9966] data-[state=active]:text-white data-[state=active]:shadow-lg"
+              className="group relative rounded-xl px-6 py-3 transition-all data-[state=active]:text-white data-[state=active]:shadow-lg"
             >
               Clientes
-              <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 w-max -translate-x-1/2 rounded-xl bg-gradient-to-r from-[#ff5e62] to-[#ff9966] px-3 py-2 text-xs font-semibold text-white shadow-lg opacity-0 transition-all duration-200 group-hover:opacity-100 group-hover:translate-y-1">
+              <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 w-max -translate-x-1/2 rounded-xl px-3 py-2 text-xs font-semibold text-white shadow-lg opacity-0 transition-all duration-200 group-hover:opacity-100 group-hover:translate-y-1" style={{ background: getPrimaryGradient() }}>
                 Gestiona perfiles, estado y contacto de clientes.
               </span>
             </TabsTrigger>
             <TabsTrigger
               value="pagos"
-              className="group relative rounded-xl px-6 py-3 transition-all data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#ff5e62] data-[state=active]:to-[#ff9966] data-[state=active]:text-white data-[state=active]:shadow-lg"
+              className="group relative rounded-xl px-6 py-3 transition-all data-[state=active]:text-white data-[state=active]:shadow-lg"
             >
               Pagos
-              <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 w-max -translate-x-1/2 rounded-xl bg-gradient-to-r from-[#ff5e62] to-[#ff9966] px-3 py-2 text-xs font-semibold text-white shadow-lg opacity-0 transition-all duration-200 group-hover:opacity-100 group-hover:translate-y-1">
+              <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 w-max -translate-x-1/2 rounded-xl px-3 py-2 text-xs font-semibold text-white shadow-lg opacity-0 transition-all duration-200 group-hover:opacity-100 group-hover:translate-y-1" style={{ background: getPrimaryGradient() }}>
                 Registra pagos y revisa el historial de transacciones.
               </span>
             </TabsTrigger>
             <TabsTrigger
               value="mediciones"
-              className="group relative rounded-xl px-6 py-3 transition-all data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#ff5e62] data-[state=active]:to-[#ff9966] data-[state=active]:text-white data-[state=active]:shadow-lg"
+              className="group relative rounded-xl px-6 py-3 transition-all data-[state=active]:text-white data-[state=active]:shadow-lg"
             >
               Mediciones
-              <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 w-max -translate-x-1/2 rounded-xl bg-gradient-to-r from-[#ff5e62] to-[#ff9966] px-3 py-2 text-xs font-semibold text-white shadow-lg opacity-0 transition-all duration-200 group-hover:opacity-100 group-hover:translate-y-1">
+              <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 w-max -translate-x-1/2 rounded-xl px-3 py-2 text-xs font-semibold text-white shadow-lg opacity-0 transition-all duration-200 group-hover:opacity-100 group-hover:translate-y-1" style={{ background: getPrimaryGradient() }}>
                 Guarda y consulta mediciones fisicas de los clientes.
               </span>
             </TabsTrigger>
@@ -828,6 +902,20 @@ export function FigmaApp({ defaultTab }: { defaultTab?: "clientes" | "pagos" | "
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Footer - Powered by Jokem */}
+      {appConfig.poweredByJokem.enabled && (
+        <footer className="mt-8 pb-6 text-center">
+          <a
+            href={appConfig.poweredByJokem.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-gray-500 transition-colors hover:text-gray-700"
+          >
+            {appConfig.poweredByJokem.text}
+          </a>
+        </footer>
+      )}
     </div>
   );
 }

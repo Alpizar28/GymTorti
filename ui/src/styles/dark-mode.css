@@ -1,0 +1,52 @@
+/* Dark Mode CSS Variables - Template Ready */
+
+/* Variables base que se actualizan según el modo */
+:root {
+    /* Estas variables se setean dinámicamente desde el theme root */
+    --background: #ffffff;
+    --surface: #f9fafb;
+    --surface-hover: #f3f4f6;
+    --border: #e5e7eb;
+    --text: #111827;
+    --text-muted: #6b7280;
+}
+
+/* Dark mode override */
+.dark {
+    --background: #0f172a;
+    --surface: #1e293b;
+    --surface-hover: #334155;
+    --border: #475569;
+    --text: #f1f5f9;
+    --text-muted: #94a3b8;
+}
+
+/* Utility classes que usan las variables */
+.bg-background {
+    background-color: var(--background);
+}
+
+.bg-surface {
+    background-color: var(--surface);
+}
+
+.bg-surface-hover {
+    background-color: var(--surface-hover);
+}
+
+.border-border {
+    border-color: var(--border);
+}
+
+.text-foreground {
+    color: var(--text);
+}
+
+.text-muted {
+    color: var(--text-muted);
+}
+
+/* Hover utilities */
+.hover\:bg-surface-hover:hover {
+    background-color: var(--surface-hover);
+}

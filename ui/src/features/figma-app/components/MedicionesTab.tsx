@@ -70,9 +70,9 @@ export function MedicionesTab({ mediciones, clientes, onCreateMedicion, onDelete
   const normalizedQuery = searchQuery.trim().toLowerCase();
   const filteredClientes = normalizedQuery
     ? clientes.filter((cliente) => {
-        const nombre = `${cliente.nombre} ${cliente.apellido}`.toLowerCase();
-        return nombre.includes(normalizedQuery) || cliente.email?.toLowerCase().includes(normalizedQuery) || cliente.telefono?.includes(normalizedQuery);
-      })
+      const nombre = `${cliente.nombre} ${cliente.apellido}`.toLowerCase();
+      return nombre.includes(normalizedQuery) || cliente.email?.toLowerCase().includes(normalizedQuery) || cliente.telefono?.includes(normalizedQuery);
+    })
     : clientes;
 
   const groupedMediciones = filteredClientes
@@ -137,20 +137,23 @@ export function MedicionesTab({ mediciones, clientes, onCreateMedicion, onDelete
     }
   };
 
+  const getPrimaryGradient = () => "linear-gradient(to right, #ff5e62, #ff9966)";
+
   return (
     <>
-      <Card className="overflow-hidden rounded-3xl border-none shadow-xl">
-        <CardHeader className="border-b bg-gradient-to-r from-gray-50 to-white">
+      <Card className="overflow-hidden rounded-3xl border-border bg-surface shadow-xl">
+        <CardHeader className="border-b border-border bg-surface-hover">
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
             <div>
-              <CardTitle className="text-2xl text-gray-900">Mediciones Corporales</CardTitle>
-              <p className="mt-1 text-sm text-gray-600">Seguimiento del progreso físico</p>
+              <CardTitle className="text-2xl text-foreground">Mediciones Corporales</CardTitle>
+              <p className="mt-1 text-sm text-muted">Seguimiento del progreso físico</p>
             </div>
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button
                   disabled={clientes.length === 0}
-                  className="rounded-xl bg-gradient-to-r from-[#ff5e62] to-[#ff9966] text-white shadow-lg transition-all hover:shadow-xl"
+                  className="rounded-xl text-white shadow-lg transition-all hover:shadow-xl"
+                  style={{ background: getPrimaryGradient() }}
                 >
                   <Plus className="mr-2 h-5 w-5" />
                   Nueva Medición
@@ -169,17 +172,17 @@ export function MedicionesTab({ mediciones, clientes, onCreateMedicion, onDelete
         <CardContent className="p-0">
           {clientes.length === 0 ? (
             <div className="py-16 text-center">
-              <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-r from-[#ff5e62] to-[#ff9966]">
+              <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl" style={{ background: getPrimaryGradient() }}>
                 <Plus className="h-8 w-8 text-white" />
               </div>
-              <p className="text-lg text-gray-500">Primero debes agregar clientes para registrar mediciones.</p>
+              <p className="text-lg text-muted">Primero debes agregar clientes para registrar mediciones.</p>
             </div>
           ) : mediciones.length === 0 ? (
             <div className="py-16 text-center">
-              <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-r from-[#ff5e62] to-[#ff9966]">
+              <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl" style={{ background: getPrimaryGradient() }}>
                 <Plus className="h-8 w-8 text-white" />
               </div>
-              <p className="text-lg text-gray-500">No hay mediciones registradas. Registra la primera medición.</p>
+              <p className="text-lg text-muted">No hay mediciones registradas. Registra la primera medición.</p>
             </div>
           ) : (
             <div className="space-y-6 p-6">
@@ -188,11 +191,11 @@ export function MedicionesTab({ mediciones, clientes, onCreateMedicion, onDelete
                   placeholder="Buscar cliente por nombre, correo o telefono..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="h-12 rounded-2xl border-none bg-white shadow-sm"
+                  className="h-12 rounded-2xl border-border bg-surface text-foreground shadow-sm placeholder:text-muted"
                 />
               </div>
               {groupedMediciones.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-6 text-center text-sm text-gray-500">
+                <div className="rounded-2xl border border-dashed border-border bg-surface p-6 text-center text-sm text-muted">
                   No hay mediciones para el filtro seleccionado.
                 </div>
               ) : (
@@ -201,25 +204,25 @@ export function MedicionesTab({ mediciones, clientes, onCreateMedicion, onDelete
                   const latestImc = latest ? parseFloat(calcularIMC(latest.peso, latest.altura)) : 0;
                   const opened = isExpanded(group.cliente.id);
                   return (
-                    <div key={group.cliente.id} className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+                    <div key={group.cliente.id} className="rounded-2xl border border-border bg-surface p-4 shadow-sm">
                       <div className="flex w-full flex-wrap items-center justify-between gap-3 text-left">
                         <div>
-                          <p className="text-sm text-gray-500">Cliente</p>
-                          <p className="text-lg font-semibold text-gray-900">
+                          <p className="text-sm text-muted">Cliente</p>
+                          <p className="text-lg font-semibold text-foreground">
                             {group.cliente.nombre} {group.cliente.apellido}
                           </p>
                           {latest && (
-                            <p className="mt-1 text-xs text-gray-500">Ultima medicion: {new Date(latest.fecha).toLocaleDateString()}</p>
+                            <p className="mt-1 text-xs text-muted">Ultima medicion: {new Date(latest.fecha).toLocaleDateString()}</p>
                           )}
                         </div>
                         <div className="flex items-center gap-3">
                           {latest && (
-                            <div className="hidden items-center gap-3 rounded-full bg-[#fff4f0] px-3 py-1 text-xs font-semibold text-gray-700 md:flex">
+                            <div className="hidden items-center gap-3 rounded-full bg-surface-hover px-3 py-1 text-xs font-semibold text-muted md:flex">
                               <span>Peso: {latest.peso} kg</span>
                               <span>IMC: {latestImc}</span>
                             </div>
                           )}
-                          <div className="rounded-full bg-[#ffe5e6] px-3 py-1 text-sm font-semibold text-[#ff5e62]">
+                          <div className="rounded-full bg-surface-hover px-3 py-1 text-sm font-semibold text-foreground border border-border">
                             {group.mediciones.length} medicion{group.mediciones.length !== 1 ? "es" : ""}
                           </div>
                           <Button
@@ -227,7 +230,7 @@ export function MedicionesTab({ mediciones, clientes, onCreateMedicion, onDelete
                             variant="ghost"
                             size="sm"
                             onClick={() => handleOpenReporte(group.cliente)}
-                            className="rounded-xl text-[#ff5e62] hover:bg-[#ffe5e6] hover:text-[#ff5e62]"
+                            className="rounded-xl text-[#ff5e62] hover:bg-surface-hover"
                           >
                             <FileText className="h-4 w-4" />
                           </Button>
@@ -236,7 +239,7 @@ export function MedicionesTab({ mediciones, clientes, onCreateMedicion, onDelete
                             variant="ghost"
                             size="sm"
                             onClick={() => handleDownloadClienteReport(group.cliente.id)}
-                            className="rounded-xl text-[#ff5e62] hover:bg-[#ffe5e6] hover:text-[#ff5e62]"
+                            className="rounded-xl text-[#ff5e62] hover:bg-surface-hover"
                           >
                             <Download className="h-4 w-4" />
                           </Button>
@@ -245,7 +248,7 @@ export function MedicionesTab({ mediciones, clientes, onCreateMedicion, onDelete
                             variant="ghost"
                             size="sm"
                             onClick={() => handleShareReportWhatsApp(group.cliente.id)}
-                            className="rounded-xl text-green-600 hover:bg-green-50 hover:text-green-700"
+                            className="rounded-xl text-green-600 hover:bg-surface-hover"
                             aria-label="Enviar por WhatsApp"
                           >
                             <MessageCircle className="h-4 w-4" />
@@ -255,7 +258,7 @@ export function MedicionesTab({ mediciones, clientes, onCreateMedicion, onDelete
                             variant="ghost"
                             size="sm"
                             onClick={() => toggleExpanded(group.cliente.id)}
-                            className="rounded-xl text-gray-500 hover:bg-gray-100"
+                            className="rounded-xl text-muted hover:bg-surface-hover"
                           >
                             <ChevronDown className={`h-4 w-4 transition ${opened ? "rotate-180" : ""}`} />
                           </Button>
@@ -265,27 +268,27 @@ export function MedicionesTab({ mediciones, clientes, onCreateMedicion, onDelete
                         <div className="mt-4 overflow-x-auto">
                           <Table>
                             <TableHeader>
-                              <TableRow className="bg-gray-50 hover:bg-gray-50">
-                                <TableHead className="rounded-tl-3xl">Fecha</TableHead>
-                                <TableHead>Peso</TableHead>
-                                <TableHead>% Grasa</TableHead>
-                                <TableHead>IMC</TableHead>
-                                <TableHead className="rounded-tr-3xl text-right">Acciones</TableHead>
+                              <TableRow className="bg-surface-hover hover:bg-surface-hover border-border">
+                                <TableHead className="rounded-tl-3xl text-muted">Fecha</TableHead>
+                                <TableHead className="text-muted">Peso</TableHead>
+                                <TableHead className="text-muted">% Grasa</TableHead>
+                                <TableHead className="text-muted">IMC</TableHead>
+                                <TableHead className="rounded-tr-3xl text-right text-muted">Acciones</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
                               {group.mediciones.map((medicion) => {
                                 const imc = parseFloat(calcularIMC(medicion.peso, medicion.altura));
                                 return (
-                                  <TableRow key={medicion.id} className="transition-colors hover:bg-gray-50">
+                                  <TableRow key={medicion.id} className="transition-colors hover:bg-surface-hover border-border">
                                     <TableCell>
-                                      <div className="text-sm text-gray-900">{new Date(medicion.fecha).toLocaleDateString()}</div>
+                                      <div className="text-sm text-foreground">{new Date(medicion.fecha).toLocaleDateString()}</div>
                                     </TableCell>
                                     <TableCell>
-                                      <span className="font-semibold text-gray-900">{medicion.peso} kg</span>
+                                      <span className="font-semibold text-foreground">{medicion.peso} kg</span>
                                     </TableCell>
                                     <TableCell>
-                                      <span className="font-semibold text-gray-900">{medicion.grasaCorporal ?? "-"} %</span>
+                                      <span className="font-semibold text-foreground">{medicion.grasaCorporal ?? "-"} %</span>
                                     </TableCell>
                                     <TableCell>
                                       <span className={`text-lg font-bold ${getIMCColor(imc)}`}>{imc}</span>
@@ -296,7 +299,7 @@ export function MedicionesTab({ mediciones, clientes, onCreateMedicion, onDelete
                                           variant="ghost"
                                           size="sm"
                                           onClick={() => handleViewDetail(medicion)}
-                                          className="rounded-xl text-[#ff5e62] hover:bg-[#ffe5e6] hover:text-[#ff5e62]"
+                                          className="rounded-xl text-[#ff5e62] hover:bg-surface-hover"
                                         >
                                           <Eye className="h-4 w-4" />
                                         </Button>
@@ -304,7 +307,7 @@ export function MedicionesTab({ mediciones, clientes, onCreateMedicion, onDelete
                                           variant="ghost"
                                           size="sm"
                                           onClick={() => handleDeleteMedicion(medicion.id)}
-                                          className="rounded-xl text-red-600 hover:bg-red-50 hover:text-red-700"
+                                          className="rounded-xl text-red-600 hover:bg-surface-hover"
                                         >
                                           <Trash2 className="h-4 w-4" />
                                         </Button>

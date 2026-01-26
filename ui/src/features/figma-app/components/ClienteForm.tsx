@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { Cliente, ClienteFormData } from "../types";
+import { getPrimaryGradient } from "@/config/app.config";
 
 interface ClienteFormProps {
   onSubmit: (data: ClienteFormData) => void | Promise<void>;
@@ -28,25 +29,25 @@ export function ClienteForm({ onSubmit, onCancel, initialData }: ClienteFormProp
   const { register, handleSubmit, formState, getValues } = useForm<ClienteFormData>({
     defaultValues: initialData
       ? {
-          nombre: initialData.nombre,
-          apellido: initialData.apellido,
-          cedula: initialData.cedula ?? "",
-          email: initialData.email,
-          telefonoCodigo: phoneDefaults.code,
-          telefonoNumero: phoneDefaults.number,
-          contactoEmergencia: initialData.contactoEmergencia ?? "",
-          observaciones: initialData.observaciones ?? "",
-        }
+        nombre: initialData.nombre,
+        apellido: initialData.apellido,
+        cedula: initialData.cedula ?? "",
+        email: initialData.email,
+        telefonoCodigo: phoneDefaults.code,
+        telefonoNumero: phoneDefaults.number,
+        contactoEmergencia: initialData.contactoEmergencia ?? "",
+        observaciones: initialData.observaciones ?? "",
+      }
       : {
-          nombre: "",
-          apellido: "",
-          cedula: "",
-          email: "",
-          telefonoCodigo: "506",
-          telefonoNumero: "",
-          contactoEmergencia: "",
-          observaciones: "",
-        },
+        nombre: "",
+        apellido: "",
+        cedula: "",
+        email: "",
+        telefonoCodigo: "506",
+        telefonoNumero: "",
+        contactoEmergencia: "",
+        observaciones: "",
+      },
   });
 
   const { errors } = formState;
@@ -173,7 +174,7 @@ export function ClienteForm({ onSubmit, onCancel, initialData }: ClienteFormProp
         <Button type="button" variant="outline" onClick={onCancel} className="rounded-xl">
           Cancelar
         </Button>
-        <Button type="submit" className="rounded-xl bg-gradient-to-r from-[#ff5e62] to-[#ff9966] text-white shadow-lg">
+        <Button type="submit" className="rounded-xl text-white shadow-lg" style={{ background: getPrimaryGradient() }}>
           {initialData ? "Actualizar Cliente" : "Registrar Cliente"}
         </Button>
       </div>

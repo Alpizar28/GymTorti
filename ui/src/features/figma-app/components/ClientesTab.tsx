@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ClienteForm } from "./ClienteForm";
 import type { Cliente, ClienteFormData } from "../types";
+import { getPrimaryGradient, themeColors } from "@/config/app.config";
 
 interface ClientesTabProps {
   clientes: Cliente[];
@@ -134,14 +135,14 @@ export function ClientesTab({
 
   return (
     <>
-      <Card className="overflow-hidden rounded-3xl border-none shadow-xl">
-        <CardHeader className="border-b bg-gradient-to-r from-gray-50 to-white">
+      <Card className="overflow-hidden rounded-3xl border-border bg-surface shadow-xl">
+        <CardHeader className="border-b border-border bg-surface-hover">
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
             <div>
-              <CardTitle className="font-black text-gray-900" style={{ fontSize: "1.5rem" }}>
+              <CardTitle className="font-black text-foreground" style={{ fontSize: "1.5rem" }}>
                 Gestión de Clientes
               </CardTitle>
-              <p className="mt-1 text-sm text-gray-600">Administra la información de tus miembros</p>
+              <p className="mt-1 text-sm text-muted">Administra la información de tus miembros</p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex gap-2">
@@ -149,7 +150,8 @@ export function ClientesTab({
                   variant={filter === "todos" ? "default" : "outline"}
                   size="sm"
                   onClick={() => setFilter("todos")}
-                  className={filter === "todos" ? "rounded-xl bg-gradient-to-r from-[#ff5e62] to-[#ff9966] text-white" : "rounded-xl"}
+                  className="rounded-xl"
+                  style={filter === "todos" ? { background: getPrimaryGradient(), color: 'white' } : {}}
                 >
                   Todos ({clientes.length})
                 </Button>
@@ -157,7 +159,8 @@ export function ClientesTab({
                   variant={filter === "activos" ? "default" : "outline"}
                   size="sm"
                   onClick={() => setFilter("activos")}
-                  className={filter === "activos" ? "rounded-xl bg-gradient-to-r from-[#ff5e62] to-[#ff9966] text-white" : "rounded-xl"}
+                  className="rounded-xl"
+                  style={filter === "activos" ? { background: getPrimaryGradient(), color: 'white' } : {}}
                 >
                   Activos ({clientes.filter((c) => c.estado === "activo").length})
                 </Button>
@@ -165,7 +168,8 @@ export function ClientesTab({
                   variant={filter === "por-vencer" ? "default" : "outline"}
                   size="sm"
                   onClick={() => setFilter("por-vencer")}
-                  className={filter === "por-vencer" ? "rounded-xl bg-gradient-to-r from-[#ff5e62] to-[#ff9966] text-white" : "rounded-xl"}
+                  className="rounded-xl"
+                  style={filter === "por-vencer" ? { background: getPrimaryGradient(), color: 'white' } : {}}
                 >
                   Por vencer ({clientes.filter((c) => c.estado === "por-vencer").length})
                 </Button>
@@ -173,7 +177,8 @@ export function ClientesTab({
                   variant={filter === "vencidos" ? "default" : "outline"}
                   size="sm"
                   onClick={() => setFilter("vencidos")}
-                  className={filter === "vencidos" ? "rounded-xl bg-gradient-to-r from-[#ff5e62] to-[#ff9966] text-white" : "rounded-xl"}
+                  className="rounded-xl"
+                  style={filter === "vencidos" ? { background: getPrimaryGradient(), color: 'white' } : {}}
                 >
                   Vencidos ({clientes.filter((c) => c.estado === "vencido").length})
                 </Button>
@@ -192,7 +197,7 @@ export function ClientesTab({
                 }}
               >
                 <DialogTrigger asChild>
-                  <Button className="rounded-xl bg-gradient-to-r from-[#ff5e62] to-[#ff9966] text-white shadow-lg transition-all hover:shadow-xl">
+                  <Button className="rounded-xl text-white shadow-lg transition-all hover:shadow-xl" style={{ background: getPrimaryGradient() }}>
                     <Plus className="mr-2 h-5 w-5" />
                     Nuevo Cliente
                   </Button>
@@ -219,101 +224,102 @@ export function ClientesTab({
         <CardContent className="p-0">
           {clientesFiltrados.length === 0 ? (
             <div className="py-16 text-center">
-              <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-r from-[#ff5e62] to-[#ff9966]">
+              <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl" style={{ background: getPrimaryGradient() }}>
                 <UsersIcon />
               </div>
-              <p className="text-lg text-gray-500">
+              <p className="text-lg text-muted">
                 {clientes.length === 0 ? "No hay clientes registrados. Agrega el primer cliente." : "No hay clientes en este filtro."}
               </p>
             </div>
           ) : (
-              <Table
-                containerClassName="overflow-x-visible"
-                className="[&_td]:px-[15px] [&_td]:py-[11px] [&_th]:px-[15px] [&_th]:h-[39px]"
-              >
-                <TableHeader>
-                  <TableRow className="bg-gray-50 hover:bg-gray-50">
-                    <TableHead className="rounded-tl-3xl">Cliente</TableHead>
-                    <TableHead>Contacto</TableHead>
-                    <TableHead>Membresía</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead className="rounded-tr-3xl text-right">Acciones</TableHead>
+            <Table
+              containerClassName="overflow-x-visible"
+              className="[&_td]:px-[15px] [&_td]:py-[11px] [&_th]:px-[15px] [&_th]:h-[39px]"
+            >
+              <TableHeader>
+                <TableRow className="bg-surface-hover hover:bg-surface-hover border-border">
+                  <TableHead className="rounded-tl-3xl text-muted">Cliente</TableHead>
+                  <TableHead className="text-muted">Contacto</TableHead>
+                  <TableHead className="text-muted">Membresía</TableHead>
+                  <TableHead className="text-muted">Estado</TableHead>
+                  <TableHead className="rounded-tr-3xl text-right text-muted">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {clientesFiltrados.map((cliente) => (
+                  <TableRow key={cliente.id} className="transition-colors hover:bg-surface-hover border-border">
+                    <TableCell>
+                      <div>
+                        <p className="font-semibold text-foreground">
+                          {cliente.nombre} {cliente.apellido}
+                        </p>
+                        <p className="text-sm text-muted">ID: {cliente.id}</p>
+                        <p className="text-sm text-muted">Cedula: {cliente.cedula || "--"}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <p className="text-sm text-foreground">{cliente.email}</p>
+                        <p className="text-sm text-muted">{cliente.telefono}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <Badge variant="outline" className="capitalize text-foreground border-border">
+                          {cliente.tipoMembresia}
+                        </Badge>
+                        <p className="text-sm text-muted">
+                          Vence:{" "}
+                          {cliente.fechaVencimiento ? new Date(cliente.fechaVencimiento).toLocaleDateString("es-CR") : "Sin membresia"}
+                        </p>
+                      </div>
+                    </TableCell>
+                    <TableCell>{getEstadoBadge(cliente.estado, cliente.fechaVencimiento)}</TableCell>
+                    <TableCell className="text-right overflow-visible">
+                      <div className="flex justify-end gap-2 overflow-visible">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEnviarRecordatorio(cliente.id)}
+                          className="group relative rounded-xl text-green-600 hover:bg-green-50 hover:text-green-700"
+                          aria-label="Enviar por WhatsApp"
+                        >
+                          <MessageCircle className="h-4 w-4" />
+                          <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 w-max -translate-x-1/2 rounded-xl px-3 py-2 text-xs font-semibold text-white shadow-lg opacity-0 transition-all duration-200 group-hover:opacity-100 group-hover:-translate-y-1" style={{ background: getPrimaryGradient() }}>
+                            Enviar recordatorio
+                          </span>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEditDialog(cliente)}
+                          className="group relative rounded-xl hover:bg-surface-hover"
+                          style={{ color: themeColors.primary.solid() }}
+                          aria-label="Editar cliente"
+                        >
+                          <Pencil className="h-4 w-4" />
+                          <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 w-max -translate-x-1/2 rounded-xl px-3 py-2 text-xs font-semibold text-white shadow-lg opacity-0 transition-all duration-200 group-hover:opacity-100 group-hover:-translate-y-1" style={{ background: getPrimaryGradient() }}>
+                            Editar cliente
+                          </span>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteCliente(cliente.id)}
+                          className="group relative rounded-xl text-red-600 hover:bg-red-50 hover:text-red-700"
+                          aria-label="Eliminar cliente"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 w-max -translate-x-1/2 rounded-xl px-3 py-2 text-xs font-semibold text-white shadow-lg opacity-0 transition-all duration-200 group-hover:opacity-100 group-hover:-translate-y-1" style={{ background: getPrimaryGradient() }}>
+                            Eliminar cliente
+                          </span>
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {clientesFiltrados.map((cliente) => (
-                    <TableRow key={cliente.id} className="transition-colors hover:bg-gray-50">
-                      <TableCell>
-                        <div>
-                          <p className="font-semibold text-gray-900">
-                            {cliente.nombre} {cliente.apellido}
-                          </p>
-                          <p className="text-sm text-gray-600">ID: {cliente.id}</p>
-                          <p className="text-sm text-gray-600">Cedula: {cliente.cedula || "--"}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <p className="text-sm text-gray-900">{cliente.email}</p>
-                          <p className="text-sm text-gray-600">{cliente.telefono}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <Badge variant="outline" className="capitalize">
-                            {cliente.tipoMembresia}
-                          </Badge>
-                          <p className="text-sm text-gray-600">
-                            Vence:{" "}
-                            {cliente.fechaVencimiento ? new Date(cliente.fechaVencimiento).toLocaleDateString("es-CR") : "Sin membresia"}
-                          </p>
-                        </div>
-                      </TableCell>
-                      <TableCell>{getEstadoBadge(cliente.estado, cliente.fechaVencimiento)}</TableCell>
-                      <TableCell className="text-right overflow-visible">
-                        <div className="flex justify-end gap-2 overflow-visible">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEnviarRecordatorio(cliente.id)}
-                            className="group relative rounded-xl text-green-600 hover:bg-green-50 hover:text-green-700"
-                            aria-label="Enviar por WhatsApp"
-                          >
-                            <MessageCircle className="h-4 w-4" />
-                            <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 w-max -translate-x-1/2 rounded-xl bg-gradient-to-r from-[#ff5e62] to-[#ff9966] px-3 py-2 text-xs font-semibold text-white shadow-lg opacity-0 transition-all duration-200 group-hover:opacity-100 group-hover:-translate-y-1">
-                              Enviar recordatorio
-                            </span>
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openEditDialog(cliente)}
-                            className="group relative rounded-xl text-[#ff5e62] hover:bg-[#ffe5e6] hover:text-[#ff5e62]"
-                            aria-label="Editar cliente"
-                          >
-                            <Pencil className="h-4 w-4" />
-                            <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 w-max -translate-x-1/2 rounded-xl bg-gradient-to-r from-[#ff5e62] to-[#ff9966] px-3 py-2 text-xs font-semibold text-white shadow-lg opacity-0 transition-all duration-200 group-hover:opacity-100 group-hover:-translate-y-1">
-                              Editar cliente
-                            </span>
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteCliente(cliente.id)}
-                            className="group relative rounded-xl text-red-600 hover:bg-red-50 hover:text-red-700"
-                            aria-label="Eliminar cliente"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 w-max -translate-x-1/2 rounded-xl bg-gradient-to-r from-[#ff5e62] to-[#ff9966] px-3 py-2 text-xs font-semibold text-white shadow-lg opacity-0 transition-all duration-200 group-hover:opacity-100 group-hover:-translate-y-1">
-                              Eliminar cliente
-                            </span>
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                ))}
+              </TableBody>
+            </Table>
           )}
         </CardContent>
       </Card>

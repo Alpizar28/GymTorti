@@ -8,7 +8,7 @@ export interface Cliente {
   fechaInicio: string;
   fechaVencimiento: string;
   estado: "activo" | "vencido" | "por-vencer" | "inactivo";
-  tipoMembresia: "diario" | "mensual" | "trimestral" | "semestral" | "anual";
+  tipoMembresia: "diario" | "mensual" | "pareja" | "universidad" | "colegio";
   contactoEmergencia?: string;
   observaciones?: string;
 }
@@ -29,7 +29,7 @@ export interface Pago {
   clienteId: string;
   monto: number;
   fecha: string;
-  tipoPago: "diario" | "mensual" | "trimestral" | "semestral" | "anual";
+  tipoPago: "diario" | "mensual" | "pareja" | "universidad" | "colegio";
   metodoPago: "efectivo" | "tarjeta" | "sinpe";
   referencia?: string;
   fechaVencimientoAnterior?: string;

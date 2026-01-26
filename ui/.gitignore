@@ -40,4 +40,9 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
-next-env.d.ts
+
+# tenant config
+tenant.setup.json
+supabase/seed/*.sql
+!supabase/seed/.gitkeep
+

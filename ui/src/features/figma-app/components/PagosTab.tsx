@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PagoForm } from "./PagoForm";
 import type { Cliente, Pago } from "../types";
+import { getPrimaryGradient, appConfig } from "@/config/app.config";
 
 interface PagosTabProps {
   pagos: Pago[];
@@ -257,43 +258,43 @@ export function PagosTab({ pagos, onCreatePago, onDeletePago, clientes }: PagosT
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2">
-        <Card className="overflow-hidden rounded-3xl border-none shadow-xl">
-          <CardHeader className="border-b bg-gradient-to-r from-gray-50 to-white">
-            <CardTitle className="text-sm text-gray-600">Ingresos del periodo</CardTitle>
+        <Card className="overflow-hidden rounded-3xl border-border bg-surface shadow-xl">
+          <CardHeader className="border-b border-border bg-surface-hover">
+            <CardTitle className="text-sm text-muted">Ingresos del periodo</CardTitle>
           </CardHeader>
           <CardContent className="pt-6">
-            <p className="font-black text-gray-900" style={{ fontSize: "1.75rem" }}>
+            <p className="font-black text-foreground" style={{ fontSize: "1.75rem" }}>
               {colones.format(totalAmount)}
             </p>
-            <p className="mt-1 text-sm text-gray-600">{periodLabel}</p>
+            <p className="mt-1 text-sm text-muted">{periodLabel}</p>
           </CardContent>
         </Card>
 
-        <Card className="overflow-hidden rounded-3xl border-none shadow-xl">
-          <CardHeader className="border-b bg-gradient-to-r from-gray-50 to-white">
-            <CardTitle className="text-sm text-gray-600">Cantidad de movimientos</CardTitle>
+        <Card className="overflow-hidden rounded-3xl border-border bg-surface shadow-xl">
+          <CardHeader className="border-b border-border bg-surface-hover">
+            <CardTitle className="text-sm text-muted">Cantidad de movimientos</CardTitle>
           </CardHeader>
           <CardContent className="pt-6">
-            <p className="font-black text-gray-900" style={{ fontSize: "1.75rem" }}>
+            <p className="font-black text-foreground" style={{ fontSize: "1.75rem" }}>
               {totalMovements}
             </p>
-            <p className="mt-1 text-sm text-gray-600">{periodLabel}</p>
+            <p className="mt-1 text-sm text-muted">{periodLabel}</p>
           </CardContent>
         </Card>
       </div>
       {ingresosPorDia.length > 0 && (
-        <Card className="overflow-hidden rounded-3xl border-none shadow-xl">
-          <CardHeader className="border-b bg-gradient-to-r from-gray-50 to-white">
+        <Card className="overflow-hidden rounded-3xl border-border bg-surface shadow-xl">
+          <CardHeader className="border-b border-border bg-surface-hover">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="font-black text-gray-900" style={{ fontSize: "1.5rem" }}>
+                <CardTitle className="font-black text-foreground" style={{ fontSize: "1.5rem" }}>
                   Ingresos del periodo
                 </CardTitle>
-                <p className="mt-1 text-sm text-gray-600">{periodLabel}</p>
+                <p className="mt-1 text-sm text-muted">{periodLabel}</p>
               </div>
               <div className="text-right">
-                <p className="text-sm text-gray-600">Total</p>
-                <p className="font-black text-gray-900" style={{ fontSize: "1.5rem" }}>
+                <p className="text-sm text-muted">Total</p>
+                <p className="font-black text-foreground" style={{ fontSize: "1.5rem" }}>
                   {colones.format(totalAmount)}
                 </p>
               </div>
@@ -302,19 +303,21 @@ export function PagosTab({ pagos, onCreatePago, onDeletePago, clientes }: PagosT
           <CardContent className="pt-6">
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={ingresosPorDia}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="dia" tick={{ fontSize: 12 }} stroke="#9ca3af" label={{ value: "Dia del periodo", position: "insideBottom", offset: -5 }} />
-                <YAxis tick={{ fontSize: 12 }} stroke="#9ca3af" tickFormatter={(value) => colones.format(value as number)} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="dia" tick={{ fontSize: 12, fill: "var(--text-muted)" }} stroke="var(--text-muted)" label={{ value: "Dia del periodo", position: "insideBottom", offset: -5, fill: "var(--text-muted)" }} />
+                <YAxis tick={{ fontSize: 12, fill: "var(--text-muted)" }} stroke="var(--text-muted)" tickFormatter={(value) => colones.format(value as number)} />
                 <Tooltip
-                  contentStyle={{ background: "white", border: "none", borderRadius: "12px", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }}
+                  contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "12px", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)", color: "var(--text)" }}
+                  itemStyle={{ color: "var(--text)" }}
+                  labelStyle={{ color: "var(--text-muted)" }}
                   formatter={(value: number) => [colones.format(value), "Ingresos"]}
                   labelFormatter={(label) => `Dia ${label}`}
                 />
                 <Bar dataKey="ingresos" fill="url(#gradientBar)" radius={[8, 8, 0, 0]} />
                 <defs>
                   <linearGradient id="gradientBar" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#ff5e62" />
-                    <stop offset="100%" stopColor="#ff9966" />
+                    <stop offset="0%" stopColor={appConfig.theme.primary.from} />
+                    <stop offset="100%" stopColor={appConfig.theme.primary.to} />
                   </linearGradient>
                 </defs>
               </BarChart>
@@ -323,21 +326,21 @@ export function PagosTab({ pagos, onCreatePago, onDeletePago, clientes }: PagosT
         </Card>
       )}
 
-      <Card className="overflow-hidden rounded-3xl border-none shadow-xl">
-        <CardHeader className="border-b bg-gradient-to-r from-gray-50 to-white">
+      <Card className="overflow-hidden rounded-3xl border-border bg-surface shadow-xl">
+        <CardHeader className="border-b border-border bg-surface-hover">
           <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
             <div>
-              <CardTitle className="font-black text-gray-900" style={{ fontSize: "1.5rem" }}>
+              <CardTitle className="font-black text-foreground" style={{ fontSize: "1.5rem" }}>
                 Gestión de Pagos
               </CardTitle>
-              <p className="mt-1 text-sm text-gray-600">Registro y control de ingresos</p>
+              <p className="mt-1 text-sm text-muted">Registro y control de ingresos</p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex flex-col gap-1">
-                <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Periodo (dias)</span>
+                <span className="text-xs font-semibold uppercase tracking-wide text-muted">Periodo (dias)</span>
                 <div className="flex items-center gap-2">
                   <select
-                    className="rounded-xl border px-3 py-2 text-sm"
+                    className="rounded-xl border border-border bg-surface px-3 py-2 text-sm text-foreground"
                     value={periodPreset}
                     onChange={(e) => handlePresetChange(e.target.value as PeriodPreset)}
                   >
@@ -356,7 +359,7 @@ export function PagosTab({ pagos, onCreatePago, onDeletePago, clientes }: PagosT
                       value={customDays}
                       onChange={(e) => handleCustomDaysChange(e.target.value)}
                       onBlur={handleCustomDaysBlur}
-                      className="w-28 rounded-xl"
+                      className="w-28 rounded-xl border-border bg-surface text-foreground"
                       inputMode="numeric"
                     />
                   )}
@@ -368,7 +371,7 @@ export function PagosTab({ pagos, onCreatePago, onDeletePago, clientes }: PagosT
               </Button>
               <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button className="rounded-xl bg-gradient-to-r from-[#ff5e62] to-[#ff9966] text-white shadow-lg transition-all hover:shadow-xl">
+                  <Button className="rounded-xl text-white shadow-lg transition-all hover:shadow-xl" style={{ background: getPrimaryGradient() }}>
                     <Plus className="mr-2 h-5 w-5" />
                     Nuevo Pago
                   </Button>
@@ -392,96 +395,96 @@ export function PagosTab({ pagos, onCreatePago, onDeletePago, clientes }: PagosT
         <CardContent className="p-0">
           {pagos.length === 0 ? (
             <div className="py-16 text-center">
-              <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-r from-[#ff5e62] to-[#ff9966]">
+              <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl" style={{ background: getPrimaryGradient() }}>
                 <BarChart3 className="h-8 w-8 text-white" />
               </div>
-              <p className="text-lg text-gray-500">No hay pagos registrados. Registra el primer pago.</p>
+              <p className="text-lg text-muted">No hay pagos registrados. Registra el primer pago.</p>
             </div>
-            ) : (
-              <>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-gray-50 hover:bg-gray-50">
-                        <TableHead className="rounded-tl-3xl">Fecha</TableHead>
-                        <TableHead>Cliente</TableHead>
-                        <TableHead>Metodo</TableHead>
-                        <TableHead>Descripcion/Referencia</TableHead>
-                        <TableHead className="text-right">Monto</TableHead>
-                        <TableHead className="rounded-tr-3xl text-right">Acciones</TableHead>
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-surface-hover hover:bg-surface-hover border-border">
+                      <TableHead className="rounded-tl-3xl text-muted">Fecha</TableHead>
+                      <TableHead className="text-muted">Cliente</TableHead>
+                      <TableHead className="text-muted">Metodo</TableHead>
+                      <TableHead className="text-muted">Descripcion/Referencia</TableHead>
+                      <TableHead className="text-right text-muted">Monto</TableHead>
+                      <TableHead className="rounded-tr-3xl text-right text-muted">Acciones</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {pagosPaginados.map((pago) => (
+                      <TableRow key={pago.id} className="transition-colors hover:bg-surface-hover border-border">
+                        <TableCell>
+                          <div className="text-sm text-foreground">{new Date(pago.fecha).toLocaleDateString("es-CR")}</div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-semibold text-foreground">{getClienteNombre(pago.clienteId)}</div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="capitalize text-foreground border-border">
+                            {pago.metodoPago}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm text-muted">{pago.referencia ?? "\u2014"}</span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <span className="font-bold text-foreground">{colones.format(pago.monto)}</span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeletePago(pago.id)}
+                            className="rounded-xl text-red-600 hover:bg-red-50 hover:text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {pagosPaginados.map((pago) => (
-                        <TableRow key={pago.id} className="transition-colors hover:bg-gray-50">
-                          <TableCell>
-                            <div className="text-sm text-gray-900">{new Date(pago.fecha).toLocaleDateString("es-CR")}</div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="font-semibold text-gray-900">{getClienteNombre(pago.clienteId)}</div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className="capitalize">
-                              {pago.metodoPago}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-sm text-gray-600">{pago.referencia ?? "\u2014"}</span>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <span className="font-bold text-gray-900">{colones.format(pago.monto)}</span>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeletePago(pago.id)}
-                              className="rounded-xl text-red-600 hover:bg-red-50 hover:text-red-700"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                      {pagosPaginados.length === 0 && (
-                        <TableRow>
-                          <TableCell className="py-10 text-center text-gray-500" colSpan={6}>
-                            Sin pagos en el periodo seleccionado.
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
+                    ))}
+                    {pagosPaginados.length === 0 && (
+                      <TableRow>
+                        <TableCell className="py-10 text-center text-muted" colSpan={6}>
+                          Sin pagos en el periodo seleccionado.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-2 px-6 py-4 text-sm text-muted">
+                <div>
+                  Pagina <span className="font-semibold">{tablePage + 1}</span> de{" "}
+                  <span className="font-semibold">{totalTablePages}</span> -{" "}
+                  <span className="font-semibold">{totalMovements}</span> movimientos
                 </div>
-                <div className="flex flex-wrap items-center justify-between gap-2 px-6 py-4 text-sm text-gray-600">
-                  <div>
-                    Pagina <span className="font-semibold">{tablePage + 1}</span> de{" "}
-                    <span className="font-semibold">{totalTablePages}</span> -{" "}
-                    <span className="font-semibold">{totalMovements}</span> movimientos
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="rounded-xl"
-                      onClick={() => setTablePage((p) => Math.max(0, p - 1))}
-                      disabled={tablePage <= 0}
-                    >
-                      Anterior
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="rounded-xl"
-                      onClick={() => setTablePage((p) => Math.min(Math.max(totalTablePages - 1, 0), p + 1))}
-                      disabled={tablePage >= totalTablePages - 1}
-                    >
-                      Siguiente
-                    </Button>
-                  </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-xl"
+                    onClick={() => setTablePage((p) => Math.max(0, p - 1))}
+                    disabled={tablePage <= 0}
+                  >
+                    Anterior
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-xl"
+                    onClick={() => setTablePage((p) => Math.min(Math.max(totalTablePages - 1, 0), p + 1))}
+                    disabled={tablePage >= totalTablePages - 1}
+                  >
+                    Siguiente
+                  </Button>
                 </div>
-              </>
-            )}
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
     </div>

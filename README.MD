@@ -1,131 +1,99 @@
-# MasterGym – Admin (Backend + UI)
+# JokemGym Template System 🏋️‍♂️
 
-Sistema de gestión de membresías para gimnasio (modo admin).  
-Stack: **Java 21 + Spring Boot + PostgreSQL + Next.js (React)**.
+Este repositorio es un **TEMPLATE WHITE-LABEL** diseñado para crear instancias independientes de aplicaciones de gestión para gimnasios.
 
----
-
-## Requisitos (versiones recomendadas)
-
-### Backend
-- **Java (JDK)**: Eclipse Temurin / OpenJDK **21.0.9 LTS**
-- **Gradle**: se usa **Gradle Wrapper** (incluido en el repo) → no instalar Gradle manualmente
-- El instalador ajusta `JAVA_HOME` de forma permanente para el usuario si es necesario.
-
-### Frontend (UI)
-- **Node.js**: **v22.18.0 (o 20.x LTS)**
-- **npm**: **10.9.3**
-- **Next.js**: **16.0.10**
-- **React**: **19.2.1**
-- **TypeScript**: **5.9.3**
-
-### Base de datos
-- **PostgreSQL**: recomendado **18**
-- **pgAdmin 4**: (opcional, para ver datos visualmente) – versión usada: 9.9
+> **⚠️ IMPORTANTE:** Este código es una BASE. No debe correrse en producción tal cual. Cada gimnasio requiere su propio repositorio clonado y su propia configuración.
 
 ---
 
-## Estructura del repo
+## 🏗️ Arquitectura del Sistema
 
-Master-Gym/
-├─ backend/ # Spring Boot + PostgreSQL
-└─ ui/ # Next.js (Admin UI)
+El sistema utiliza un enfoque de **"Configuración como Código"** para garantizar que cada gimnasio sea único pero mantenible desde una base común.
 
-yaml
-Copiar código
+### Componentes Clave
 
----
-
-## 1) Base de datos (PostgreSQL)
-
-Crear una base de datos llamada:
-
-- `mastergym_dev`
-
-En pgAdmin:
-- Databases → Create → Database → nombre: `mastergym_dev`
-
-> Nota: el usuario/contraseña se configuran en `backend/src/main/resources/application.properties`.
+1.  **`tenant.setup.json` (Input):** Archivo JSON (privado por gym) que define TODO: nombre, colores, moneda, timezone, planes activos y precios.
+2.  **`npm run tenant:build` (Motor):** Script que toma el JSON y genera:
+    *   **Frontend Config:** `src/config/app.config.ts` (TypeScript estático).
+    *   **Database Config:** `supabase/seed/seed.<id>.sql` (Datos SQL).
+3.  **Guardrails:** La aplicación UI se bloquea si intentas correrla sin haber ejecutado el proceso de configuración, evitando que uses una versión "genérica" por error.
 
 ---
 
-## 2) Instalacion manual (una sola vez)
+## 🚀 Guía de Inicio Rápido (Crear nuevo Gym)
 
-1) Configurar variables del backend (recomendado, evita credenciales hardcodeadas):
+Sigue estos pasos para desplegar un nuevo cliente desde este template.
 
-```powershell
-$env:SPRING_DATASOURCE_URL="jdbc:postgresql://localhost:5432/mastergym_dev"
-$env:SPRING_DATASOURCE_USERNAME="postgres"
-$env:SPRING_DATASOURCE_PASSWORD="TU_PASSWORD"
-```
-
-2) Build del frontend:
-
-```powershell
-cd .\ui
+### 1. Preparación del Entorno
+Clona este repositorio y entra en la carpeta `ui`:
+```bash
+git clone <url-repo-template> nuevo-gym
+cd nuevo-gym/ui
 npm install
-npm run build
 ```
 
-3) Build del backend:
+### 2. Configuración del Tenant
+1.  Duplica el archivo de ejemplo:
+    ```bash
+    cp tenant.setup.json.example tenant.setup.json
+    ```
+2.  Edita `tenant.setup.json` con los datos reales del cliente:
+    *   **Branding:** Nombre, tagline, logo (ruta en `/public`).
+    *   **Producto:** Moneda (USD, CRC, etc.), Timezone (America/Panama), Unidades.
+    *   **Planes:** Habilita (`enabled: true`) solo los planes que el gym vende y define sus precios.
 
-```powershell
-cd ..\backend
-.\gradlew.bat bootJar
+### 3. Generar Artefactos
+Ejecuta el script de construcción del tenant. Esto transformará tu JSON en código y SQL.
+```bash
+npm run tenant:build
 ```
+*Si todo sale bien, verás `✅ TENANT BUILD COMPLETE`.*
 
-4) Crear el icono del escritorio (toggle):
+### 4. Configurar Base de Datos (Supabase)
+1.  Crea un nuevo proyecto en Supabase para este cliente.
+2.  Copia `.env.example` a `.env` y coloca las credenciales (`NEXT_PUBLIC_SUPABASE_URL`, `ANON_KEY`, etc.).
+3.  Ve al **SQL Editor** de Supabase y ejecuta:
+    1.  **Migración Core:** `supabase/migrations/001_core.sql` (Crea las tablas).
+    2.  **Seed Generado:** `supabase/seed/seed.<tu-gym-id>.sql` (Inserta la configuración y planes).
 
-```powershell
-cd ..\
-powershell -ExecutionPolicy Bypass -File launcher\Create-DesktopShortcut.ps1
+### 5. Ejecutar
+```bash
+npm run dev
 ```
-
-## 3) Uso diario (cliente)
-
-- Doble clic en el icono "MasterGym": enciende y abre el navegador.
-- Segundo clic: apaga la app.
-- Si no abre, revisar `logs/backend.log` y `logs/ui.log`.
+La aplicación debería iniciar con el branding, moneda y planes configurados.
 
 ---
 
-## Nuevas variables de entorno (recomendado)
+## 🛠️ Comandos Disponibles
 
-### UI (Next.js)
-Crear `ui/.env.local`:
-
-```env
-NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
-```
-
-### Backend (Spring Boot)
-Evitar credenciales hardcodeadas en el repo y usar variables:
-
-```powershell
-$env:SPRING_DATASOURCE_URL="jdbc:postgresql://localhost:5432/mastergym_dev"
-$env:SPRING_DATASOURCE_USERNAME="postgres"
-$env:SPRING_DATASOURCE_PASSWORD="TU_PASSWORD"
-$env:CORS_ALLOWED_ORIGINS="http://localhost:3000"
-```
+| Comando | Descripción |
+| :--- | :--- |
+| `npm run dev` | Inicia el servidor de desarrollo (UI). |
+| `npm run tenant:build` | Genera/Actualiza la configuración basada en `tenant.setup.json`. |
+| `npm run build` | Compila la aplicación Next.js para producción. |
 
 ---
 
-## Pagos (API)
+## 📂 Estructura de Archivos Relevante
 
-Recorda enviar `Authorization: Bearer <TOKEN>` en cada request a `/api/**`.
+```text
+ui/
+├── tenant.setup.json.example   # Plantilla de configuración (copiar a .json)
+├── scripts/
+│   ├── tenant-build.ts         # Orquestador del build
+│   ├── generate-app-config.ts  # Generador de TypeScript para UI
+│   └── generate-seed-sql.ts    # Generador de SQL para DB
+├── src/
+│   └── config/
+│       ├── app.config.ts       # (GENERADO) Config final usada por la UI
+│       └── plans.catalog.ts    # Catálogo universal de todos los planes posibles
+└── supabase/
+    ├── migrations/             # Schema base de la DB
+    └── seed/                   # (GENERADO) Scripts de datos iniciales
+```
 
-- `POST /api/payments`
-- `GET /api/payments?page=0&size=50&sort=paymentDate,desc`
-- `GET /api/payments?clientId=123&page=0&size=50`
-- `PUT /api/payments/{id}`
-- `DELETE /api/payments/{id}`
+## 🔐 Seguridad y Notas Técnicas
 
-UI: `http://localhost:3000/payments`
-
----
-
-## Seguridad (local)
-
-- Mantener `server.address=127.0.0.1` para evitar acceso en LAN.
-- Usar un usuario de DB con permisos minimos (no superuser).
-- Rotar credenciales periodicamente y mantener `.env` fuera de git.
+*   **Sin DB Local:** Este template no usa Docker ni BD local. Todo conecta a Supabase.
+*   **Timezones:** El sistema respeta el timezone configurado en `product.config` para el cálculo de vencimientos, independiente de dónde esté el usuario.
+*   **Aislamiento:** `tenant.setup.json` y los seeds generados están en `.gitignore` para evitar subir datos sensibles o específicos de un cliente al repo base por error.

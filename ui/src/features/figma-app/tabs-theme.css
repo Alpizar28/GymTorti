@@ -1,0 +1,19 @@
+/* Estilos declarativos para tabs usando CSS variables del tema */
+
+/* Tab trigger base - usa CSS variables */
+[role="tablist"] [role="tab"] {
+  background: transparent;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Tab activo - gradiente desde CSS variables */
+[role="tablist"] [role="tab"][data-state="active"] {
+  background: linear-gradient(to right, var(--theme-primary-from), var(--theme-primary-to)) !important;
+  color: white;
+}
+
+/* Tab hover (solo si NO está activo) */
+[role="tablist"] [role="tab"]:not([data-state="active"]):hover {
+  background: linear-gradient(to right, var(--theme-primary-from), var(--theme-primary-to));
+  opacity: 0.85;
+}
