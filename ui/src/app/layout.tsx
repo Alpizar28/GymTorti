@@ -25,6 +25,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   // GUARDRAIL: Prevent running unconfigured template connected to real/default DBs
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if ((appConfig as any).__TEMPLATE_NOT_CONFIGURED__) {
     return (
       <html lang="en">

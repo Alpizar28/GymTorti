@@ -9,23 +9,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { apiSend } from "@/lib/api"; // Keep apiSend for mutations (mocked for now)
+import { apiSend } from "@/lib/api"; // Keep apiSend for legacy backup feature only
 import { createClient } from "@/lib/supabase";
 import { type Session } from "@supabase/supabase-js";
 import type {
-  ClientCreateRequest,
   ClientResponse,
   ClientStatus,
-  ClientUpdateRequest,
-  MeasurementCreateRequest,
-  MeasurementResponse,
-  Page,
-  PaymentCreateRequest,
   PaymentMethod,
   PaymentType,
   PaymentResponse,
 } from "@/lib/types";
-import { appConfig, getPrimaryGradient, themeColors } from "@/config/app.config";
+import { appConfig, getPrimaryGradient } from "@/config/app.config";
 import { ClientesTab } from "./components/ClientesTab";
 import { MedicionesTab } from "./components/MedicionesTab";
 import { PagosTab } from "./components/PagosTab";
@@ -133,18 +127,7 @@ function uiMetodoFromBackend(method?: PaymentMethod): Pago["metodoPago"] {
   }
 }
 
-function paymentTypeFromUi(tipoPago: Pago["tipoPago"]): PaymentType {
-  switch (tipoPago) {
-    case "diario":
-      return "DAILY_MEMBERSHIP";
-    case "mensual":
-    case "pareja":
-    case "universidad":
-    case "colegio":
-    default:
-      return "MONTHLY_MEMBERSHIP";
-  }
-}
+
 
 function tipoPagoFromPayment(paymentType?: PaymentType, notes?: string | null): Pago["tipoPago"] {
   switch (paymentType) {
@@ -266,7 +249,7 @@ export function FigmaApp({ defaultTab }: { defaultTab?: "clientes" | "pagos" | "
    * REFACTOR NOTE: Local API calls have been replaced by Supabase Client calls.
    * This ensures the template works 100% cloud-native.
    */
-  import { createClient } from "@/lib/supabase";
+
 
   async function loadAll() {
     setError(null);
@@ -301,6 +284,7 @@ export function FigmaApp({ defaultTab }: { defaultTab?: "clientes" | "pagos" | "
       // Note: We need to adapt the DB column names to what the UI expects (legacy)
       // or update the UI. For this refactor, we map to preserve UI.
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const mappedClients = (clientsData || []).map((c: any) => ({
         id: c.id,
         gymId: 0, // Legacy
@@ -314,6 +298,7 @@ export function FigmaApp({ defaultTab }: { defaultTab?: "clientes" | "pagos" | "
         notas: c.notes
       } as ClientResponse));
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const mappedPayments = (paymentsData || []).map((p: any) => ({
         id: p.id, // UUID in DB, but UI might expect number? Check usage. 
         // types.ts defined id as number in ClientResponse/PaymentResponse. 
@@ -330,6 +315,7 @@ export function FigmaApp({ defaultTab }: { defaultTab?: "clientes" | "pagos" | "
       setBackendPayments(mappedPayments);
 
       setMediciones(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (measurementsData || []).map((m: any) => ({
           id: String(m.id),
           clienteId: String(m.client_id),
@@ -380,7 +366,7 @@ export function FigmaApp({ defaultTab }: { defaultTab?: "clientes" | "pagos" | "
       } else {
         setLoginForm({ username: "", password: "" });
       }
-    } catch (err) {
+    } catch {
       setAuthError("Error inesperado al iniciar sesión.");
     } finally {
       setLoginLoading(false);
@@ -480,102 +466,116 @@ export function FigmaApp({ defaultTab }: { defaultTab?: "clientes" | "pagos" | "
 
   async function handleCreateCliente(cliente: ClienteFormData) {
     setError(null);
-    const request: ClientCreateRequest = {
-      nombre: cliente.nombre,
-      apellido: cliente.apellido,
-      cedula: cliente.cedula,
-      telefono: buildPhone(cliente.telefonoCodigo, cliente.telefonoNumero),
-      email: cliente.email,
-      notas: cliente.observaciones,
-    };
+    try {
+      const { data, error } = await supabase
+        .from("clients")
+        .insert({
+          first_name: cliente.nombre,
+          last_name: cliente.apellido,
+          email: cliente.email || null,
+          phone: buildPhone(cliente.telefonoCodigo, cliente.telefonoNumero),
+          notes: cliente.observaciones,
+          status: "active"
+        })
+        .select()
+        .single();
 
-    const created = await apiSend<ClientResponse>("/api/clients", "POST", request);
+      if (error) throw error;
 
-    setClientExtras((prev) => ({
-      ...prev,
-      [String(created.id)]: {
-        contactoEmergencia: cliente.contactoEmergencia,
-      },
-    }));
+      setClientExtras((prev) => ({
+        ...prev,
+        [String(data.id)]: {
+          contactoEmergencia: cliente.contactoEmergencia,
+        },
+      }));
 
-    await loadAll();
+      await loadAll();
+    } catch (err) {
+      console.error("Error creating client:", err);
+      setError(friendlyError(err));
+    }
   }
 
   async function handleUpdateCliente(clienteId: string, cliente: ClienteFormData) {
     setError(null);
-    const request: ClientUpdateRequest = {
-      nombre: cliente.nombre,
-      apellido: cliente.apellido,
-      cedula: cliente.cedula,
-      telefono: buildPhone(cliente.telefonoCodigo, cliente.telefonoNumero),
-      email: cliente.email,
-      notas: cliente.observaciones,
-    };
+    try {
+      const { error } = await supabase
+        .from("clients")
+        .update({
+          first_name: cliente.nombre,
+          last_name: cliente.apellido,
+          email: cliente.email || null,
+          phone: buildPhone(cliente.telefonoCodigo, cliente.telefonoNumero),
+          notes: cliente.observaciones,
+        })
+        .eq("id", clienteId);
 
-    await apiSend<ClientResponse>(`/api/clients/${Number(clienteId)}`, "PUT", request);
+      if (error) throw error;
 
-    setClientExtras((prev) => ({
-      ...prev,
-      [clienteId]: {
-        contactoEmergencia: cliente.contactoEmergencia,
-      },
-    }));
+      setClientExtras((prev) => ({
+        ...prev,
+        [clienteId]: {
+          contactoEmergencia: cliente.contactoEmergencia,
+        },
+      }));
 
-    await loadAll();
+      await loadAll();
+    } catch (err) {
+      console.error("Error updating client:", err);
+      setError(friendlyError(err));
+    }
   }
 
   async function handleDeleteCliente(clienteId: string) {
     setError(null);
-    await apiSend<void>(`/api/clients/${Number(clienteId)}`, "DELETE");
+    try {
+      const { error } = await supabase
+        .from("clients")
+        .delete()
+        .eq("id", clienteId);
 
-    setClientExtras((prev) => {
-      const next = { ...prev };
-      delete next[clienteId];
-      return next;
-    });
+      if (error) throw error;
 
-    await loadAll();
+      setClientExtras((prev) => {
+        const next = { ...prev };
+        delete next[clienteId];
+        return next;
+      });
+
+      await loadAll();
+    } catch (err) {
+      console.error("Error deleting client:", err);
+      setError(friendlyError(err));
+    }
   }
 
   async function handleCreatePago(pago: Omit<Pago, "id">) {
     setError(null);
     try {
-      const request: PaymentCreateRequest = {
-        clientId: Number(pago.clienteId),
-        amount: pago.monto.toFixed(2),
-        currency: "CRC",
-        paymentMethod: paymentMethodFromUi(pago.metodoPago),
-        paymentType: paymentTypeFromUi(pago.tipoPago),
-        status: "PAID",
-        reference: pago.referencia,
-        notes: `tipoPago: ${pago.tipoPago}`,
-        paymentDate: pago.fecha,
-      };
+      // Encode paymentType in notes as legacy logic expects
+      const notesWithPaymentType = `tipoPago: ${pago.tipoPago} ${pago.referencia || ""}`.trim();
 
-      await apiSend<PaymentResponse>("/api/payments", "POST", request);
+      const { error } = await supabase
+        .from("payments")
+        .insert({
+          client_id: pago.clienteId,
+          amount: pago.monto,
+          currency: "CRC",
+          method: paymentMethodFromUi(pago.metodoPago),
+          date: pago.fecha, // Column is 'date' (TIMESTAMPTZ)
+          reference: pago.referencia || null,
+          notes: notesWithPaymentType,
+        });
+
+      if (error) throw error;
+
       await loadAll();
     } catch (err) {
-      const fallback = "Error registrando pago";
-      let msg = fallback;
-      if (err instanceof Error) {
-        const match = err.message.match(/\{.*\}$/);
-        if (match) {
-          try {
-            const parsed = JSON.parse(match[0]) as {
-              message?: string;
-              details?: { fieldErrors?: Record<string, string> };
-            };
-            msg = parsed.details?.fieldErrors?.paymentDate ?? parsed.message ?? fallback;
-          } catch {
-            msg = err.message;
-          }
-        } else {
-          msg = err.message;
-        }
-      }
+      console.error("Error creating payment:", err);
+      const msg = (err instanceof Error ? err.message : null) || "Error registrando pago";
       const friendly =
-        msg.toLowerCase().includes("paymentdate") || msg.toLowerCase().includes("futura")
-          ? "La fecha de pago no puede ser futura. Selecciona hoy o una fecha anterior."
+        msg.toLowerCase().includes("date") || msg.toLowerCase().includes("futura")
+          ? "La fecha de pago no puede ser futura."
           : msg;
       setUiError(friendly);
     }
@@ -583,35 +583,61 @@ export function FigmaApp({ defaultTab }: { defaultTab?: "clientes" | "pagos" | "
 
   async function handleDeletePago(pagoId: string) {
     setError(null);
-    await apiSend<void>(`/api/payments/${Number(pagoId)}`, "DELETE");
-    await loadAll();
+    try {
+      const { error } = await supabase
+        .from("payments")
+        .delete()
+        .eq("id", pagoId);
+
+      if (error) throw error;
+      await loadAll();
+    } catch (err) {
+      console.error("Error deleting payment:", err);
+      setError(friendlyError(err));
+    }
   }
 
   async function handleCreateMedicion(medicion: Omit<Medicion, "id">) {
     setError(null);
-    const request: MeasurementCreateRequest = {
-      clientId: Number(medicion.clienteId),
-      fecha: medicion.fecha,
-      peso: Number(medicion.peso),
-      altura: Number(medicion.altura),
-      pechoCm: Number(medicion.pechoCm),
-      cinturaCm: Number(medicion.cinturaCm),
-      caderaCm: Number(medicion.caderaCm),
-      brazoIzqCm: Number(medicion.brazoIzqCm),
-      brazoDerCm: Number(medicion.brazoDerCm),
-      piernaIzqCm: Number(medicion.piernaIzqCm),
-      piernaDerCm: Number(medicion.piernaDerCm),
-      grasaCorporal: medicion.grasaCorporal !== undefined ? Number(medicion.grasaCorporal) : undefined,
-      notas: medicion.notas,
-    };
-    await apiSend<MeasurementResponse>("/api/measurements", "POST", request);
-    await loadAll();
+    try {
+      const { error } = await supabase.from("measurements").insert({
+        client_id: medicion.clienteId,
+        fecha: medicion.fecha, // Column is 'fecha' (DATE)
+        peso: Number(medicion.peso),
+        altura: Number(medicion.altura),
+        pecho_cm: Number(medicion.pechoCm),
+        cintura_cm: Number(medicion.cinturaCm),
+        cadera_cm: Number(medicion.caderaCm),
+        brazo_izq_cm: Number(medicion.brazoIzqCm),
+        brazo_der_cm: Number(medicion.brazoDerCm),
+        pierna_izq_cm: Number(medicion.piernaIzqCm),
+        pierna_der_cm: Number(medicion.piernaDerCm),
+        grasa_corporal: medicion.grasaCorporal ? Number(medicion.grasaCorporal) : null,
+        notas: medicion.notas,
+      });
+
+      if (error) throw error;
+      await loadAll();
+    } catch (err) {
+      console.error("Error creating measurement:", err);
+      setError(friendlyError(err));
+    }
   }
 
   async function handleDeleteMedicion(id: string) {
     setError(null);
-    await apiSend<void>(`/api/measurements/${Number(id)}`, "DELETE");
-    await loadAll();
+    try {
+      const { error } = await supabase
+        .from("measurements")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+      await loadAll();
+    } catch (err) {
+      console.error("Error deleting measurement:", err);
+      setError(friendlyError(err));
+    }
   }
 
   function openBackupConfirm() {
