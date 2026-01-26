@@ -1,54 +1,23 @@
-export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
 
-const AUTH_TOKEN_KEY = "mastergym.authToken";
+import { createClient } from "./supabase";
 
-export function getAuthToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return window.sessionStorage.getItem(AUTH_TOKEN_KEY);
-}
+// ERROR CONSTANTS
+const BACKEND_DISABLED = "Error: Local Backend is DISABLED. This template is Supabase-only.";
 
-export function setAuthToken(token: string | null) {
-  if (typeof window === "undefined") return;
-  if (token) {
-    window.sessionStorage.setItem(AUTH_TOKEN_KEY, token);
-  } else {
-    window.sessionStorage.removeItem(AUTH_TOKEN_KEY);
-  }
-}
-
-function authHeaders(): Record<string, string> {
-  const token = getAuthToken();
-  const headers: Record<string, string> = {};
-  if (token) headers.Authorization = `Bearer ${token}`;
-  return headers;
-}
-
-export async function apiLogin(username: string, password: string): Promise<{ token: string; tokenType: string; expiresAt: string }> {
-  const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password }),
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`POST /api/auth/login failed: ${res.status} ${text}`);
-  }
-  return (await res.json()) as { token: string; tokenType: string; expiresAt: string };
+// Helper to check environment
+function checkEnv() {
+  // If we wanted to enforce checks, but let's just make the functions fail.
 }
 
 export async function apiGet<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    cache: "no-store",
-    headers: { ...authHeaders() },
-  });
-  if (!res.ok) {
-    if (res.status === 401 || res.status === 403) setAuthToken(null);
-    const text = await res.text();
-    throw new Error(`GET ${path} failed: ${res.status} ${text}`);
+  const supabase = createClient();
+  console.warn(`[API] Legacy apiGet called for ${path}. This should be replaced by direct Supabase calls.`);
+
+  if (path.includes("/api/clients")) {
+    throw new Error("Supabase Tables for Clients (`clients`) not created. Run your business migrations.");
   }
-  const text = await res.text();
-  return (text ? (JSON.parse(text) as T) : (undefined as T));
+
+  throw new Error(`${BACKEND_DISABLED} (Path: ${path})`);
 }
 
 export async function apiSend<T>(
@@ -57,31 +26,9 @@ export async function apiSend<T>(
   body?: unknown,
   options?: { headers?: Record<string, string> }
 ): Promise<T> {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    method,
-    headers: { "Content-Type": "application/json", ...authHeaders(), ...(options?.headers ?? {}) },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-
-  if (!res.ok) {
-    if (res.status === 401 || res.status === 403) setAuthToken(null);
-    const text = await res.text();
-    throw new Error(`${method} ${path} failed: ${res.status} ${text}`);
-  }
-
-  const text = await res.text();
-  return (text ? (JSON.parse(text) as T) : (undefined as T));
+  throw new Error(`${BACKEND_DISABLED} (Method: ${method}, Path: ${path})`);
 }
 
 export async function apiDownload(path: string): Promise<Blob> {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    cache: "no-store",
-    headers: { ...authHeaders() },
-  });
-  if (!res.ok) {
-    if (res.status === 401 || res.status === 403) setAuthToken(null);
-    const text = await res.text();
-    throw new Error(`GET ${path} failed: ${res.status} ${text}`);
-  }
-  return await res.blob();
+  throw new Error(`${BACKEND_DISABLED} (Download: ${path})`);
 }

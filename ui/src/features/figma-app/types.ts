@@ -1,16 +1,19 @@
 export interface Cliente {
   id: string;
+  // Mapeo de Supabase a Frontend (Legacy names kept for UI consistency, or updated)
+  // DB: first_name, last_name, email, phone, status, notes
   nombre: string;
   apellido: string;
-  cedula?: string;
+  cedula?: string; // Not in DB yet, but kept in UI.
   email: string;
   telefono: string;
-  fechaInicio: string;
-  fechaVencimiento: string;
+  fechaInicio: string; // created_at mapped
+  fechaVencimiento: string; // derived from subscription
   estado: "activo" | "vencido" | "por-vencer" | "inactivo";
-  tipoMembresia: "diario" | "mensual" | "pareja" | "universidad" | "colegio";
+  tipoMembresia: "diario" | "mensual" | "pareja" | "universidad" | "colegio"; // derived
   contactoEmergencia?: string;
-  observaciones?: string;
+  observaciones?: string; // notes
+  photoUrl?: string;
 }
 
 export type ClienteFormData = {

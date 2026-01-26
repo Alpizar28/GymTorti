@@ -87,11 +87,50 @@ ON CONFLICT (plan_id) DO UPDATE SET
 `;
 }
 
+
 // Write file
-const finalSql = settingsSql + '\n' + plansSql;
+const finalSql = settingsSql + '\n' + plansSql + '\n' + membershipsSql(setup.product.plans);
 // Ensure directory exists
 const dir = path.dirname(OUTPUT_PATH);
 if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 
 fs.writeFileSync(OUTPUT_PATH, finalSql);
 console.log(`✅ Seed SQL generated at: ${OUTPUT_PATH}`);
+
+// Helper to generate Memberships SQL
+function membershipsSql(plans: Record<string, any>) {
+    if (!plans) return '-- No memberships configured.';
+
+    // We Map 'plans' from setup to 'public.memberships' table
+    // Plan keys in JSON act as 'code'
+    const values = Object.keys(plans).map(key => {
+        const p = plans[key];
+        const featuresJson = JSON.stringify(p.features || []);
+        // Default duration 30 days if not specified (though JSON structure might vary, adapting safely)
+        const duration = p.durationDays || 30;
+        const name = p.name || key.toUpperCase();
+
+        return `(
+            ${esc(key)}, 
+            ${esc(name)}, 
+            ${p.price || 0}, 
+            ${duration}, 
+            '${featuresJson}'::jsonb
+        )`;
+    }).join(',\n');
+
+    if (!values) return '-- No active memberships found.';
+
+    return `
+-- 3. Seed Memberships Table
+INSERT INTO public.memberships (code, name, price, duration_days, features)
+VALUES ${values}
+ON CONFLICT (code) DO UPDATE SET
+    name = EXCLUDED.name,
+    price = EXCLUDED.price,
+    duration_days = EXCLUDED.duration_days,
+    features = EXCLUDED.features,
+    updated_at = NOW();
+`;
+}
+
