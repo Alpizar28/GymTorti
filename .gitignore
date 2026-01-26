@@ -70,5 +70,5 @@ backend/.env
 *.db-journal
 
 # If you ever create local backup dumps
-*.sql
+
 *.dump
