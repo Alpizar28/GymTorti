@@ -19,6 +19,18 @@ for (let i = 0; i < process.argv.length; i++) {
 
 if (fileArgs.length > 0) {
     configFile = fileArgs[fileArgs.length - 1]; // Take the LAST one
+} else if (process.env.TENANT_FILE) {
+    // If running in Vercel/CI with Env Var
+    const envFile = process.env.TENANT_FILE;
+    const inTenantsDir = path.join('tenants', envFile);
+
+    // Check if provided as "gym-rojo.json" (look in tenants/) or full path
+    if (fs.existsSync(path.join(process.cwd(), inTenantsDir))) {
+        configFile = inTenantsDir;
+    } else {
+        configFile = envFile;
+    }
+    console.log(`🌍 Detected TENANT_FILE env var: ${configFile}`);
 }
 // 1. Validate config presence
 const configPath = path.isAbsolute(configFile) ? configFile : path.join(process.cwd(), configFile);

@@ -11,7 +11,8 @@
     "deploy:tenant": "npm run tenant:build && npx supabase db push && npm run tenant:seed:run",
     "tenant:seed:run": "tsx scripts/run-seed.ts",
     "preview:emails": "tsx scripts/preview-email-templates.ts",
-    "test:emails": "tsx scripts/test-send-email.ts"
+    "test:emails": "tsx scripts/test-send-email.ts",
+    "build:prod": "npm run tenant:build && next build"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.2",
