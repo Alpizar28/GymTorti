@@ -81,6 +81,7 @@ export function PagosTab({ pagos, onCreatePago, onDeletePago, clientes }: PagosT
   const [customDays, setCustomDays] = useState(String(DEFAULT_PERIOD_DAYS));
   const [periodReady, setPeriodReady] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleAddPago = async (pago: Omit<Pago, "id">) => {
     await onCreatePago(pago);
@@ -93,8 +94,16 @@ export function PagosTab({ pagos, onCreatePago, onDeletePago, clientes }: PagosT
 
   const confirmDelete = async () => {
     if (deleteId) {
-      await onDeletePago(deleteId);
-      setDeleteId(null);
+      if (isDeleting) return;
+      setIsDeleting(true);
+      try {
+        await onDeletePago(deleteId);
+        setDeleteId(null);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsDeleting(false);
+      }
     }
   };
 
@@ -512,6 +521,7 @@ export function PagosTab({ pagos, onCreatePago, onDeletePago, clientes }: PagosT
         onConfirm={confirmDelete}
         confirmText="Eliminar"
         variant="destructive"
+        isLoading={isDeleting}
       />
     </div>
   );
