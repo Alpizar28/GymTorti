@@ -9,7 +9,9 @@
     "tenant:build": "tsx scripts/tenant-build.ts --file tenant.setup.json",
     "tenant:seed:print": "node -e \"const fs=require('fs'); const p='./supabase/seed'; if(!fs.existsSync(p)) {console.log('No existe',p); process.exit(0);} const f=fs.readdirSync(p).filter(x=>x.startsWith('seed.')&&x.endsWith('.sql')).sort(); console.log(f.length?('Seeds:\\n- '+f.join('\\n- ')):'No hay seeds generados aún');\"",
     "deploy:tenant": "npm run tenant:build && npx supabase db push && npm run tenant:seed:run",
-    "tenant:seed:run": "tsx scripts/run-seed.ts"
+    "tenant:seed:run": "tsx scripts/run-seed.ts",
+    "preview:emails": "tsx scripts/preview-email-templates.ts",
+    "test:emails": "tsx scripts/test-send-email.ts"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.2",

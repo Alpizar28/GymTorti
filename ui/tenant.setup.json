@@ -62,8 +62,7 @@
     "fromEmail": "onboarding@resend.dev",
     "reminders": {
       "daysBefore": [
-        3,
-        1
+        5
       ],
       "sendOnDueDate": true,
       "sendAfterDueDate": false
