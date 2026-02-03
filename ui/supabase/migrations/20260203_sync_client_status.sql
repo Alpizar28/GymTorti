@@ -110,7 +110,7 @@ CREATE TRIGGER sync_client_status_on_delete
 -- ============================================================================
 
 CREATE OR REPLACE FUNCTION fix_all_client_statuses()
-RETURNS TABLE(client_id UUID, old_status TEXT, new_status TEXT, changed BOOLEAN) AS $$
+RETURNS TABLE(client_id UUID, old_status VARCHAR, new_status VARCHAR, changed BOOLEAN) AS $$
 BEGIN
   RETURN QUERY
   WITH updates AS (
@@ -124,8 +124,8 @@ BEGIN
           WHERE s.client_id = c.id 
             AND s.active = true 
             AND s.end_date >= CURRENT_DATE
-        ) THEN 'active'
-        ELSE 'inactive'
+        ) THEN 'active'::VARCHAR
+        ELSE 'inactive'::VARCHAR
       END AS new_status
     FROM clients c
   )
