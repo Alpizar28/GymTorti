@@ -6,14 +6,19 @@ import * as path from 'path';
 console.log("🚀 STARTING TENANT BUILD...");
 
 let configFile = 'tenant.setup.json';
-const fileArgIndex = process.argv.indexOf('--file');
-if (fileArgIndex !== -1 && process.argv[fileArgIndex + 1]) {
-    configFile = process.argv[fileArgIndex + 1];
-} else {
-    const fileArg = process.argv.find(arg => arg.startsWith('--file='));
-    if (fileArg) {
-        configFile = fileArg.split('=')[1];
+
+// Collect all --file arguments and use the LAST one (to allow overriding via npm run tenant:build -- --file xyz)
+const fileArgs: string[] = [];
+for (let i = 0; i < process.argv.length; i++) {
+    if (process.argv[i] === '--file' && process.argv[i + 1]) {
+        fileArgs.push(process.argv[i + 1]);
+    } else if (process.argv[i].startsWith('--file=')) {
+        fileArgs.push(process.argv[i].split('=')[1]);
     }
+}
+
+if (fileArgs.length > 0) {
+    configFile = fileArgs[fileArgs.length - 1]; // Take the LAST one
 }
 // 1. Validate config presence
 const configPath = path.isAbsolute(configFile) ? configFile : path.join(process.cwd(), configFile);

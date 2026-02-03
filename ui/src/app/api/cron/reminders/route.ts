@@ -118,17 +118,17 @@ export async function GET(request: Request) {
                 // Enviar correo
                 const dateStr = expirationDate.toLocaleDateString('es-CR');
                 const subject = templateType === 'due_today'
-                    ? `⚠️ Tu membresía vence HOY - ${config.name}`
+                    ? `⚠️ Tu membresía vence HOY - ${config.branding.gymName}`
                     : `⏳ Recordatorio: Tu membresía vence el ${dateStr}`;
 
                 const html = `
                 <div style="font-family: sans-serif; color: #333;">
                     <h1>Hola, ${client.first_name} 👋</h1>
-                    <p>Esperamos que estés disfrutando tus entrenamientos en <strong>${config.name}</strong>.</p>
+                    <p>Esperamos que estés disfrutando tus entrenamientos en <strong>${config.branding.gymName}</strong>.</p>
                     <p>Este es un recordatorio amigable de que tu membresía vence el: <strong>${dateStr}</strong>.</p>
                     <p>¡Te esperamos para renovar y seguir cumpliendo tus metas!</p>
                     <br/>
-                    <p>Saludos,<br/>El equipo de ${config.name}</p>
+                    <p>Saludos,<br/>El equipo de ${config.branding.gymName}</p>
                 </div>
             `;
 
