@@ -1,24 +1,24 @@
 {
   "tenant": {
-    "id": "gym-template-001",
-    "displayName": "Template Gym",
+    "id": "gym-azul-001",
+    "displayName": "Gym Azul Demo",
     "country": "US",
-    "timezone": "UTC",
+    "timezone": "America/Costa_Rica",
     "locale": "en-US",
-    "supabaseProjectRef": "ADD_YOUR_SUPABASE_PROJECT_REF_HERE"
+    "supabaseProjectRef": "tu-proyecto-azul"
   },
   "branding": {
-    "gymName": "My Awesome Gym",
-    "gymTagline": "Train Hard",
-    "logoPath": "/images/logo.png",
+    "gymName": "Gym Azul",
+    "gymTagline": "Train Cool",
+    "logoPath": "/logos/gym-azul.png",
     "uiModeDefault": "dark",
     "colors": {
       "primaryFrom": "#3b82f6",
       "primaryTo": "#1d4ed8",
-      "primarySolid": "#3b82f6",
-      "primaryHover": "#2563eb",
-      "primaryActive": "#1d4ed8",
-      "primaryFocus": "#3b82f6"
+      "primarySolid": "#2563eb",
+      "primaryHover": "#1e40af",
+      "primaryActive": "#1e3a8a",
+      "primaryFocus": "rgba(59, 130, 246, 0.5)"
     }
   },
   "product": {

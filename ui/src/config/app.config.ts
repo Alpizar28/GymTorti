@@ -9,7 +9,7 @@ import { ProductConfig } from "./product.types";
  * Generada desde tenant.setup.json
  */
 const authConfig = {
-    whitelist: ["admin@jokem.tech","entrenador@jokem.tech"],
+    whitelist: ["jpablo2807xd@gmail.com"],
 };
 
 /**
@@ -19,7 +19,7 @@ const authConfig = {
 const emailConfig = {
     enabled: true,
     fromName: "Template Gym",
-    fromEmail: "no-reply@jokem.tech",
+    fromEmail: "onboarding@resend.dev",
 };
 
 /**
@@ -29,17 +29,17 @@ const emailConfig = {
 const uiConfig = {
 // ... existing ui config ...
 // I will just reuse the block below 
-    gymName: "My Awesome Gym",
-    gymTagline: "Train Hard",
-    logo: "/images/logo.png",
+    gymName: "Gym Azul",
+    gymTagline: "Train Cool",
+    logo: "/logos/gym-azul.png",
     theme: {
         primary: {
             from: "#3b82f6",
             to: "#1d4ed8",
-            solid: "#3b82f6",
-            hover: "#2563eb",
-            active: "#1d4ed8",
-            focus: "#3b82f6",
+            solid: "#2563eb",
+            hover: "#1e40af",
+            active: "#1e3a8a",
+            focus: "rgba(59, 130, 246, 0.5)",
         },
         secondary: {
             from: "#ffffff",
@@ -77,7 +77,7 @@ const uiConfig = {
  * Generada desde tenant.setup.json
  */
 const productConfig: ProductConfig = {
-    timezone: "UTC",
+    timezone: "America/Costa_Rica",
     currency: {
     code: "USD",
     symbol: "$",
