@@ -28,6 +28,15 @@ function warning(message: string) {
 }
 
 function checkTenantSetupGitIgnore() {
+    // In CI/CD environments (like Vercel), it's expected that tenant.setup.json is committed
+    // Skip this check if we detect we're in a CI environment
+    const isCI = process.env.CI || process.env.VERCEL || process.env.GITHUB_ACTIONS;
+
+    if (isCI) {
+        log(CYAN, '🔧 Running in CI/CD environment - allowing tenant.setup.json to be tracked.');
+        return;
+    }
+
     if (fs.existsSync(TENANT_SETUP_FILE)) {
         // Build is configured likely. Check if it's ignored.
         try {
