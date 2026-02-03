@@ -1,4 +1,4 @@
-export type ClientStatus = "ACTIVO" | "INACTIVO" | "MOROSO";
+export type ClientStatus = "active" | "inactive" | "ACTIVO" | "INACTIVO" | "MOROSO";
 
 export type Page<T> = {
   content: T[];

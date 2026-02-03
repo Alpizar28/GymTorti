@@ -100,15 +100,34 @@ function buildPhone(codigo: string, numero: string) {
 }
 
 function computeEstado(backendStatus: ClientStatus, fechaVencimiento?: string | null): Cliente["estado"] {
-  if (backendStatus === "INACTIVO") return "inactivo";
+  // Mapear status de DB a estado de UI
+  // DB usa: 'active' | 'inactive' 
+  // UI usa: 'activo' | 'inactivo' | 'vencido' | 'por-vencer'
+
+  // Si es inactive, es inactivo
+  if (backendStatus === "inactive" || backendStatus === "INACTIVO") return "inactivo";
+
+  // Si es active, verificar fecha de vencimiento para subcategorizarnos
+  if (backendStatus === "active") {
+    if (!fechaVencimiento) return "activo"; // Activo sin fecha = activo
+
+    const vencimiento = new Date(fechaVencimiento);
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    vencimiento.setHours(0, 0, 0, 0);
+
+    const diasParaVencer = Math.ceil((vencimiento.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (diasParaVencer < 0) return "vencido"; // Ya venció
+    if (diasParaVencer <= 7) return "por-vencer"; // Vence pronto
+    return "activo"; // Activo normal
+  }
+
+  // Legacy: MOROSO
   if (backendStatus === "MOROSO") return "vencido";
-  if (!fechaVencimiento) return "inactivo";
-  const vencimiento = new Date(fechaVencimiento);
-  const hoy = new Date();
-  const diasParaVencer = Math.ceil((vencimiento.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
-  if (vencimiento < hoy) return "vencido";
-  if (diasParaVencer <= 7) return "por-vencer";
-  return "activo";
+
+  // Default
+  return "inactivo";
 }
 
 function paymentMethodFromUi(metodoPago: Pago["metodoPago"]): PaymentMethod {
@@ -476,7 +495,7 @@ export function FigmaApp({ defaultTab }: { defaultTab?: "clientes" | "pagos" | "
           email: cliente.email || null,
           phone: buildPhone(cliente.telefonoCodigo, cliente.telefonoNumero),
           notes: cliente.observaciones,
-          status: "active"
+          status: "inactive" // Will become 'active' automatically when subscription is added
         })
         .select()
         .single();
