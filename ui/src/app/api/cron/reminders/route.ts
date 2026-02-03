@@ -8,6 +8,11 @@ import {
     logError,
     successResponse
 } from '@/lib/api-error-handler';
+import {
+    reminderSoonTemplate,
+    dueTodayTemplate,
+    createEmailConfigFromTenant
+} from '@/lib/email-templates';
 import tenantConfig from '../../../../../tenant.setup.json';
 
 // Configurar cliente de Supabase con permisos de Admin (Service Role)
@@ -134,20 +139,27 @@ async function handleReminders(_request: Request) {
 
             if (shouldSend) {
                 const dateStr = expirationDate.toLocaleDateString('es-CR');
-                const subject = templateType === 'due_today'
-                    ? `⚠️ Tu membresía vence HOY - ${config.branding.gymName}`
-                    : `⏳ Recordatorio: Tu membresía vence el ${dateStr}`;
 
-                const html = `
-          <div style="font-family: sans-serif; color: #333;">
-            <h1>Hola, ${client.first_name} 👋</h1>
-            <p>Esperamos que estés disfrutando tus entrenamientos en <strong>${config.branding.gymName}</strong>.</p>
-            <p>Este es un recordatorio amigable de que tu membresía vence el: <strong>${dateStr}</strong>.</p>
-            <p>¡Te esperamos para renovar y seguir cumpliendo tus metas!</p>
-            <br/>
-            <p>Saludos,<br/>El equipo de ${config.branding.gymName}</p>
-          </div>
-        `;
+                // Usar templates profesionales
+                const emailConfig = createEmailConfigFromTenant(config);
+
+                let html: string;
+                let subject: string;
+
+                if (templateType === 'due_today') {
+                    subject = `⚠️ Tu membresía vence HOY - ${config.branding.gymName}`;
+                    html = dueTodayTemplate(emailConfig, {
+                        clientName: client.first_name,
+                        expirationDate: dateStr,
+                    });
+                } else {
+                    subject = `⏳ Recordatorio: Tu membresía vence el ${dateStr}`;
+                    html = reminderSoonTemplate(emailConfig, {
+                        clientName: client.first_name,
+                        expirationDate: dateStr,
+                        daysRemaining: diffDays,
+                    });
+                }
 
                 console.log(`Sending email to ${client.email} (${templateType})`);
 
