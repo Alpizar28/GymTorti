@@ -311,7 +311,7 @@ export function PagosTab({ pagos, onCreatePago, onDeletePago, clientes }: PagosT
               <div className="text-right">
                 <p className="text-sm text-muted">Total</p>
                 <p className="font-black text-foreground" style={{ fontSize: "1.5rem" }}>
-                  {colones.format(totalAmount)}
+                  {currencyFormatter.format(totalAmount)}
                 </p>
               </div>
             </div>
@@ -321,12 +321,12 @@ export function PagosTab({ pagos, onCreatePago, onDeletePago, clientes }: PagosT
               <BarChart data={ingresosPorDia}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis dataKey="dia" tick={{ fontSize: 12, fill: "var(--text-muted)" }} stroke="var(--text-muted)" label={{ value: "Dia del periodo", position: "insideBottom", offset: -5, fill: "var(--text-muted)" }} />
-                <YAxis tick={{ fontSize: 12, fill: "var(--text-muted)" }} stroke="var(--text-muted)" tickFormatter={(value) => colones.format(value as number)} />
+                <YAxis tick={{ fontSize: 12, fill: "var(--text-muted)" }} stroke="var(--text-muted)" tickFormatter={(value) => currencyFormatter.format(value as number)} />
                 <Tooltip
                   contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "12px", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)", color: "var(--text)" }}
                   itemStyle={{ color: "var(--text)" }}
                   labelStyle={{ color: "var(--text-muted)" }}
-                  formatter={(value: number) => [colones.format(value), "Ingresos"]}
+                  formatter={(value: number) => [currencyFormatter.format(value), "Ingresos"]}
                   labelFormatter={(label) => `Dia ${label}`}
                 />
                 <Bar dataKey="ingresos" fill="url(#gradientBar)" radius={[8, 8, 0, 0]} />
@@ -448,7 +448,7 @@ export function PagosTab({ pagos, onCreatePago, onDeletePago, clientes }: PagosT
                           <span className="text-sm text-muted">{pago.referencia ?? "\u2014"}</span>
                         </TableCell>
                         <TableCell className="text-right">
-                          <span className="font-bold text-foreground">{colones.format(pago.monto)}</span>
+                          <span className="font-bold text-foreground">{currencyFormatter.format(pago.monto)}</span>
                         </TableCell>
                         <TableCell className="text-right">
                           <Button
