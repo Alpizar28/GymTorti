@@ -32,7 +32,17 @@ import { sendPaymentReceipt } from "@/app/actions";
 type ClienteExtras = Pick<Cliente, "contactoEmergencia">;
 
 const LS_CLIENT_EXTRAS = "mastergym-client-extras";
-const colones = new Intl.NumberFormat("es-CR", { style: "currency", currency: "CRC", maximumFractionDigits: 0 });
+
+// Currency formatter based on app config
+const currencyFormatter = new Intl.NumberFormat(
+  appConfig.product.currency.code === "USD" ? "en-US" : "es-CR",
+  {
+    style: "currency",
+    currency: appConfig.product.currency.code,
+    minimumFractionDigits: appConfig.product.currency.decimals,
+    maximumFractionDigits: appConfig.product.currency.decimals
+  }
+);
 
 const HEADER_IMAGE = gymLogo;
 
@@ -943,7 +953,7 @@ export function FigmaApp({ defaultTab }: { defaultTab?: "clientes" | "pagos" | "
             </CardHeader>
             <CardContent>
               <div className="font-black text-foreground" style={{ fontSize: "2rem" }}>
-                {colones.format(ingresosMes)}
+                {currencyFormatter.format(ingresosMes)}
               </div>
               <p className="mt-2 text-sm text-muted">Pagos registrados</p>
             </CardContent>

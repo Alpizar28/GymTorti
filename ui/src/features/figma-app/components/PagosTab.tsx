@@ -21,7 +21,16 @@ interface PagosTabProps {
   clientes: Cliente[];
 }
 
-const colones = new Intl.NumberFormat("es-CR", { style: "currency", currency: "CRC", maximumFractionDigits: 0 });
+// Currency formatter based on app config
+const currencyFormatter = new Intl.NumberFormat(
+  appConfig.product.currency.code === "USD" ? "en-US" : "es-CR",
+  {
+    style: "currency",
+    currency: appConfig.product.currency.code,
+    minimumFractionDigits: appConfig.product.currency.decimals,
+    maximumFractionDigits: appConfig.product.currency.decimals
+  }
+);
 const DEFAULT_PERIOD_DAYS = 30;
 const PERIOD_STORAGE_KEY = "mastergym.payments.periodDays";
 const QUICK_PERIODS = ["7", "15", "30", "60", "90"] as const;
@@ -231,9 +240,9 @@ export function PagosTab({ pagos, onCreatePago, onDeletePago, clientes }: PagosT
         getClienteNombre(pago.clienteId),
         pago.metodoPago,
         pago.referencia ?? "\u2014",
-        colones.format(pago.monto),
+        currencyFormatter.format(pago.monto),
       ]),
-      ["Total", "", "", "", colones.format(totalAmount)],
+      ["Total", "", "", "", currencyFormatter.format(totalAmount)],
     ];
 
     // Convertir a CSV
