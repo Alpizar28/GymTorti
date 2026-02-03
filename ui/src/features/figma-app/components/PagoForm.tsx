@@ -12,7 +12,7 @@ import type { Cliente, Pago } from "../types";
 import { getPrimaryGradient, appConfig } from "@/config/app.config";
 
 interface PagoFormProps {
-  onSubmit: (data: Omit<Pago, "id">) => void;
+  onSubmit: (data: Omit<Pago, "id">) => void | Promise<void>;
   onCancel: () => void;
   clientes: Cliente[];
 }
@@ -62,10 +62,10 @@ export function PagoForm({ onSubmit, onCancel, clientes }: PagoFormProps) {
     return clientes.find((c) => c.id === clienteId) ?? null;
   }, [clienteId, clientes]);
 
-  const handleFormSubmit = (data: Omit<Pago, "id">) => {
+  const handleFormSubmit = async (data: Omit<Pago, "id">) => {
     if (!clienteSeleccionado) return;
     const monto = montosRecomendados[tipoPago] ?? 0;
-    onSubmit({ ...data, monto });
+    await onSubmit({ ...data, monto });
   };
 
   const getEstadoBadge = (estado: Cliente["estado"]) => {

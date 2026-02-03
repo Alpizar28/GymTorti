@@ -300,7 +300,26 @@ export function FigmaApp({ defaultTab }: { defaultTab?: "clientes" | "pagos" | "
 
       if (paymentsError) throw paymentsError;
 
-      // 3. Load Measurements
+      // 3. Load Active Subscriptions
+      const { data: subscriptionsData, error: subscriptionsError } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('active', true)
+        .gte('end_date', new Date().toISOString());
+
+      if (subscriptionsError) console.warn("Error loading subscriptions:", subscriptionsError);
+
+      // Map subscriptions by Client ID
+      const subscriptionByClient = new Map<string, any>();
+      (subscriptionsData || []).forEach((sub: any) => {
+        // Keep the one with furthest end_date if multiple
+        const existing = subscriptionByClient.get(sub.client_id);
+        if (!existing || new Date(sub.end_date) > new Date(existing.end_date)) {
+          subscriptionByClient.set(sub.client_id, sub);
+        }
+      });
+
+      // 4. Load Measurements
       const { data: measurementsData, error: measurementsError } = await supabase
         .from('measurements')
         .select('*')
@@ -309,34 +328,36 @@ export function FigmaApp({ defaultTab }: { defaultTab?: "clientes" | "pagos" | "
       if (measurementsError) throw measurementsError;
 
       // Map Supabase Data -> UI State
-      // Note: We need to adapt the DB column names to what the UI expects (legacy)
-      // or update the UI. For this refactor, we map to preserve UI.
-
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const mappedClients = (clientsData || []).map((c: any) => ({
-        id: c.id,
-        gymId: 0, // Legacy
-        nombre: c.first_name,
-        apellido: c.last_name,
-        cedula: c.cedula || '', // Now mapped from DB
-        telefono: c.phone,
-        email: c.email,
-        estado: c.status?.toUpperCase() || 'INACTIVO',
-        fechaRegistro: c.created_at,
-        notas: c.notes
-      } as ClientResponse));
+      const mappedClients = (clientsData || []).map((c: any) => {
+        const sub = subscriptionByClient.get(c.id);
+
+        return {
+          id: c.id,
+          gymId: 0,
+          nombre: c.first_name,
+          apellido: c.last_name,
+          cedula: c.cedula || '',
+          telefono: c.phone,
+          email: c.email,
+          // Use DB status directly (it is managed by triggers now)
+          estado: c.status || 'inactive',
+          fechaRegistro: c.created_at,
+          notas: c.notes,
+          // Map expiration from subscription
+          fechaVencimiento: sub ? sub.end_date : null
+        } as ClientResponse;
+      });
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const mappedPayments = (paymentsData || []).map((p: any) => ({
-        id: p.id, // UUID in DB, but UI might expect number? Check usage. 
-        // types.ts defined id as number in ClientResponse/PaymentResponse. 
-        // We might need to cast or update types. Let's cast to any for now to avoid break.
+        id: p.id,
         clientId: p.client_id,
         amount: String(p.amount),
         paymentDate: p.date,
         paymentMethod: p.method?.toUpperCase(),
         notes: p.notes,
-        paymentType: 'MONTHLY_MEMBERSHIP' // Default or derive
+        paymentType: 'MONTHLY_MEMBERSHIP'
       } as unknown as PaymentResponse));
 
       setBackendClients(mappedClients);
