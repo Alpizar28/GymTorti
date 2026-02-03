@@ -55,8 +55,8 @@ export async function GET(request: Request) {
         const results = [];
 
         for (const subscription of (subscriptions || [])) {
-            // @ts-ignore - Supabase types can be tricky with joins
-            const client = Array.isArray(subscription.clients) ? subscription.clients[0] : subscription.clients;
+            const clientData = subscription.clients as any;
+            const client = Array.isArray(clientData) ? clientData[0] : clientData;
             if (!client || !client.email) continue;
 
             const expirationDate = new Date(subscription.end_date);
