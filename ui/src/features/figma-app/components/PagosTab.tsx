@@ -280,7 +280,7 @@ export function PagosTab({ pagos, onCreatePago, onDeletePago, clientes }: PagosT
           </CardHeader>
           <CardContent className="pt-6">
             <p className="font-black text-foreground" style={{ fontSize: "1.75rem" }}>
-              {colones.format(totalAmount)}
+              {currencyFormatter.format(totalAmount)}
             </p>
             <p className="mt-1 text-sm text-muted">{periodLabel}</p>
           </CardContent>
