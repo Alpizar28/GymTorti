@@ -79,13 +79,26 @@ function checkTemplateMode() {
         log(GREEN, '✅ App is configured (Product Mode).');
 
         // In configured mode, we MUST have .env.local with Supabase keys because the generated code uses them.
-        if (!fs.existsSync(ENV_LOCAL_FILE)) {
-            error('Missing .env.local file. Run "npm run tenant:build" (if needed) and create .env.local with Supabase credentials.');
-        }
+        // HOWEVER, in CI environments (like Vercel), env vars come from the platform, not from .env.local
+        const isCI = process.env.CI || process.env.VERCEL || process.env.GITHUB_ACTIONS;
 
-        const envContent = fs.readFileSync(ENV_LOCAL_FILE, 'utf8');
-        if (!envContent.includes('NEXT_PUBLIC_SUPABASE_URL') || !envContent.includes('NEXT_PUBLIC_SUPABASE_ANON_KEY')) {
-            error('.env.local is missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY.');
+        if (!isCI) {
+            // Local development - require .env.local
+            if (!fs.existsSync(ENV_LOCAL_FILE)) {
+                error('Missing .env.local file. Run "npm run tenant:build" (if needed) and create .env.local with Supabase credentials.');
+            }
+
+            const envContent = fs.readFileSync(ENV_LOCAL_FILE, 'utf8');
+            if (!envContent.includes('NEXT_PUBLIC_SUPABASE_URL') || !envContent.includes('NEXT_PUBLIC_SUPABASE_ANON_KEY')) {
+                error('.env.local is missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY.');
+            }
+        } else {
+            // CI environment - check that env vars exist in process.env
+            log(CYAN, '🔧 Running in CI/CD - checking environment variables from platform...');
+            if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+                error('Missing required environment variables: NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY. Configure them in your deployment platform.');
+            }
+            log(GREEN, '✅ Environment variables configured.');
         }
     }
 }
