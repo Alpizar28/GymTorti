@@ -1,0 +1,72 @@
+{
+  "tenant": {
+    "id": "gym-template-001",
+    "displayName": "Template Gym",
+    "country": "US",
+    "timezone": "UTC",
+    "locale": "en-US",
+    "supabaseProjectRef": "ADD_YOUR_SUPABASE_PROJECT_REF_HERE"
+  },
+  "branding": {
+    "gymName": "My Awesome Gym",
+    "gymTagline": "Train Hard",
+    "logoPath": "/images/logo.png",
+    "uiModeDefault": "dark",
+    "colors": {
+      "primaryFrom": "#3b82f6",
+      "primaryTo": "#1d4ed8",
+      "primarySolid": "#3b82f6",
+      "primaryHover": "#2563eb",
+      "primaryActive": "#1d4ed8",
+      "primaryFocus": "#3b82f6"
+    }
+  },
+  "product": {
+    "currency": {
+      "code": "USD",
+      "symbol": "$",
+      "decimals": 2,
+      "format": "symbol_before"
+    },
+    "units": {
+      "weight": "kg",
+      "length": "cm"
+    },
+    "rules": {
+      "warningThresholdDays": 7,
+      "graceDays": 0,
+      "allowBackdatedPayments": false,
+      "allowFutureStartDate": true
+    },
+    "plans": {
+      "DAILY": {
+        "enabled": true,
+        "price": 10.00,
+        "notes": "Day Pass"
+      },
+      "MONTHLY": {
+        "enabled": true,
+        "price": 50.00,
+        "notes": "Standard Membership"
+      }
+    }
+  },
+  "auth": {
+    "whitelist": [
+      "jpablo2807xd@gmail.com"
+    ]
+  },
+  "email": {
+    "enabled": true,
+    "fromName": "Template Gym",
+    "fromEmail": "no-reply@jokem.tech",
+    "reminders": {
+      "daysBefore": [
+        3,
+        1
+      ],
+      "sendOnDueDate": true,
+      "sendAfterDueDate": false
+    }
+  }
+}
