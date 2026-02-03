@@ -1,0 +1,62 @@
+{
+  "tenant": {
+    "id": "gym-torti-001",
+    "displayName": "Gym Torti",
+    "country": "PA",
+    "timezone": "America/Panama",
+    "locale": "es-PA",
+    "supabaseProjectRef": "vfnlmkncloqeietntpqe"
+  },
+  "branding": {
+    "gymName": "Gym Torti",
+    "gymTagline": "Sin dolor no hay ganancia",
+    "logoPath": "/images/logo-torti.png",
+    "uiModeDefault": "dark",
+    "colors": {
+      "primaryFrom": "#ef4444",
+      "primaryTo": "#991b1b",
+      "primarySolid": "#dc2626",
+      "primaryHover": "#b91c1c",
+      "primaryActive": "#991b1b",
+      "primaryFocus": "#ef4444"
+    }
+  },
+  "product": {
+    "currency": {
+      "code": "USD",
+      "symbol": "$",
+      "decimals": 2,
+      "format": "symbol_before"
+    },
+    "units": {
+      "weight": "lb",
+      "length": "cm"
+    },
+    "rules": {
+      "warningThresholdDays": 5,
+      "graceDays": 2,
+      "allowBackdatedPayments": true,
+      "allowFutureStartDate": true
+    },
+    "plans": {
+      "DAILY": {
+        "enabled": true,
+        "visible": true,
+        "price": 3.00,
+        "notes": "Visita Diaria"
+      },
+      "BIWEEKLY": {
+        "enabled": true,
+        "visible": true,
+        "price": 15.00,
+        "notes": "Quincenal Regular"
+      },
+      "MONTHLY": {
+        "enabled": true,
+        "visible": true,
+        "price": 25.00,
+        "notes": "Mensualidad Regular"
+      }
+    }
+  }
+}

@@ -15,19 +15,27 @@ if (fileArgIndex !== -1 && process.argv[fileArgIndex + 1]) {
         configFile = fileArg.split('=')[1];
     }
 }
-const configPath = path.join(process.cwd(), configFile);
-
 // 1. Validate config presence
+const configPath = path.isAbsolute(configFile) ? configFile : path.join(process.cwd(), configFile);
+const targetPath = path.join(process.cwd(), 'tenant.setup.json');
+
 if (!fs.existsSync(configPath)) {
     console.error(`❌ Config file not found: ${configPath}`);
     process.exit(1);
 }
 
-// 2. Load config to display info
-const setup = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+// 2. SWAP: If using a specific tenant file, copy it to the main tenant.setup.json
+// This ensures that all sub-scripts (which read tenant.setup.json) work correctly
+if (path.resolve(configPath) !== path.resolve(targetPath)) {
+    console.log(`🔄 Swapping configuration: ${configFile} -> tenant.setup.json`);
+    fs.copyFileSync(configPath, targetPath);
+}
+
+// 3. Load config to display info
+const setup = JSON.parse(fs.readFileSync(targetPath, 'utf-8'));
 console.log(`📌 Tenant: ${setup.tenant.displayName} (${setup.tenant.id})`);
 
-// 3. Execute Generators
+// 4. Execute Generators
 try {
     // Determine runner: use tsx if available or require ts-node, or node if compiled.
     // Assuming development env with these capabilities.
@@ -42,7 +50,7 @@ try {
 
     console.log("✅ TENANT BUILD COMPLETE.");
 
-    // 4. Generate .env.example suggestion
+    // 5. Generate .env.example suggestion
     const envExample = `
 # Generated for project: ${setup.tenant.supabaseProjectRef || 'unknown'}
 NEXT_PUBLIC_SUPABASE_URL=https://${setup.tenant.supabaseProjectRef || 'PROJECT_REF'}.supabase.co

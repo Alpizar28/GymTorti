@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { Cliente, ClienteFormData } from "../types";
-import { getPrimaryGradient } from "@/config/app.config";
+import { getPrimaryGradient, appConfig } from "@/config/app.config";
 
 interface ClienteFormProps {
   onSubmit: (data: ClienteFormData) => void | Promise<void>;
@@ -79,14 +79,13 @@ export function ClienteForm({ onSubmit, onCancel, initialData }: ClienteFormProp
           <Label htmlFor="cedula">Cedula *</Label>
           <Input
             id="cedula"
-            inputMode="numeric"
-            maxLength={9}
+            type="text"
+            maxLength={20}
             {...register("cedula", {
               required: "La cedula es requerida",
-              pattern: { value: /^\d{9}$/, message: "La cedula debe tener 9 digitos" },
-              setValueAs: (value) => (typeof value === "string" ? value.replace(/\D/g, "") : value),
+              pattern: { value: /^[\d\-\s]+$/, message: "Solo se permiten números y guiones" },
             })}
-            placeholder="102030405"
+            placeholder="1-0203-0405"
             className="rounded-xl"
           />
           {errors.cedula && <p className="text-sm text-red-600">{errors.cedula.message}</p>}
@@ -104,6 +103,7 @@ export function ClienteForm({ onSubmit, onCancel, initialData }: ClienteFormProp
                 value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
                 message: "Correo invalido",
               },
+              validate: undefined
             })}
             placeholder="juan@ejemplo.com"
             className="rounded-xl"
@@ -174,8 +174,16 @@ export function ClienteForm({ onSubmit, onCancel, initialData }: ClienteFormProp
         <Button type="button" variant="outline" onClick={onCancel} className="rounded-xl">
           Cancelar
         </Button>
-        <Button type="submit" className="rounded-xl text-white shadow-lg" style={{ background: getPrimaryGradient() }}>
-          {initialData ? "Actualizar Cliente" : "Registrar Cliente"}
+        <Button
+          type="submit"
+          disabled={formState.isSubmitting}
+          className="rounded-xl text-white shadow-lg"
+          style={{ background: getPrimaryGradient() }}
+        >
+          {formState.isSubmitting
+            ? "Guardando..."
+            : (initialData ? "Actualizar Cliente" : "Registrar Cliente")
+          }
         </Button>
       </div>
     </form>

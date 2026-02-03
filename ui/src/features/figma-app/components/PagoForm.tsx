@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Cliente, Pago } from "../types";
-import { getPrimaryGradient } from "@/config/app.config";
+import { getPrimaryGradient, appConfig } from "@/config/app.config";
 
 interface PagoFormProps {
   onSubmit: (data: Omit<Pago, "id">) => void;
@@ -17,7 +17,11 @@ interface PagoFormProps {
   clientes: Cliente[];
 }
 
-const colones = new Intl.NumberFormat("es-CR", { style: "currency", currency: "CRC", maximumFractionDigits: 0 });
+const currencyFormatter = new Intl.NumberFormat(appConfig.product.currency.format === "symbol_before" ? "en-US" : "es-CR", {
+  style: "currency",
+  currency: appConfig.product.currency.code,
+  minimumFractionDigits: appConfig.product.currency.decimals,
+});
 
 function localDateValue(date = new Date()) {
   const yyyy = date.getFullYear();
@@ -44,12 +48,13 @@ export function PagoForm({ onSubmit, onCancel, clientes }: PagoFormProps) {
   const metodoPago = useWatch({ control, name: "metodoPago" });
   const { errors } = formState;
 
+  // TODO: Refactor this to use appConfig.product.enabledPlans
   const montosRecomendados: Record<string, number> = {
-    diario: 2000,
-    mensual: 15000,
-    universidad: 11000,
-    colegio: 10000,
-    pareja: 25000,
+    diario: 10,
+    mensual: 50,
+    universidad: 35,
+    colegio: 30,
+    pareja: 90,
   };
 
   const clienteSeleccionado = useMemo(() => {
@@ -165,18 +170,18 @@ export function PagoForm({ onSubmit, onCancel, clientes }: PagoFormProps) {
             <SelectValue placeholder="Selecciona el tipo" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="diario">Sesion del dia - {colones.format(2000)}</SelectItem>
-            <SelectItem value="mensual">Mensualidad regular - {colones.format(15000)}</SelectItem>
-            <SelectItem value="universidad">Mensualidad universidad - {colones.format(11000)}</SelectItem>
-            <SelectItem value="colegio">Mensualidad colegio - {colones.format(10000)}</SelectItem>
-            <SelectItem value="pareja">Precio por pareja - {colones.format(25000)}</SelectItem>
+            <SelectItem value="diario">Sesion del dia - {currencyFormatter.format(10)}</SelectItem>
+            <SelectItem value="mensual">Mensualidad regular - {currencyFormatter.format(50)}</SelectItem>
+            <SelectItem value="universidad">Mensualidad universidad - {currencyFormatter.format(35)}</SelectItem>
+            <SelectItem value="colegio">Mensualidad colegio - {currencyFormatter.format(30)}</SelectItem>
+            <SelectItem value="pareja">Precio por pareja - {currencyFormatter.format(90)}</SelectItem>
           </SelectContent>
         </Select>
       </div>
       <div className="space-y-2">
         <Label>Monto</Label>
         <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-gray-900">
-          {colones.format(montosRecomendados[tipoPago] ?? 0)}
+          {currencyFormatter.format(montosRecomendados[tipoPago] ?? 0)}
         </div>
       </div>
 
@@ -203,8 +208,13 @@ export function PagoForm({ onSubmit, onCancel, clientes }: PagoFormProps) {
         <Button type="button" variant="outline" onClick={onCancel} className="rounded-xl">
           Cancelar
         </Button>
-        <Button type="submit" className="rounded-xl text-white shadow-lg" style={{ background: getPrimaryGradient() }}>
-          Registrar Pago
+        <Button
+          type="submit"
+          disabled={formState.isSubmitting}
+          className="rounded-xl text-white shadow-lg"
+          style={{ background: getPrimaryGradient() }}
+        >
+          {formState.isSubmitting ? "Registrando..." : "Registrar Pago"}
         </Button>
       </div>
     </form>

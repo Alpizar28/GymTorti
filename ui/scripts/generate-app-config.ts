@@ -29,6 +29,14 @@ interface TenantSetup {
         rules: any;
         plans: Record<string, any>;
     };
+    auth: {
+        whitelist: string[];
+    };
+    email: {
+        enabled: boolean;
+        fromName: string;
+        fromEmail: string;
+    };
 }
 
 const CONFIG_PATH = path.join(process.cwd(), 'tenant.setup.json');
@@ -49,10 +57,30 @@ import { UNIVERSAL_PLANS, PLAN_IDS } from "./plans.catalog";
 import { ProductConfig } from "./product.types";
 
 /**
+ * CONFIGURACIÓN DE AUTH
+ * Generada desde tenant.setup.json
+ */
+const authConfig = {
+    whitelist: ${JSON.stringify(setup.auth?.whitelist || [])},
+};
+
+/**
+ * CONFIGURACIÓN DE EMAILS
+ * Generada desde tenant.setup.json
+ */
+const emailConfig = {
+    enabled: ${setup.email?.enabled ?? false},
+    fromName: "${setup.email?.fromName || 'Gym'}",
+    fromEmail: "${setup.email?.fromEmail || 'no-reply@example.com'}",
+};
+
+/**
  * CONFIGURACIÓN DE UI (Visual, Themes, Branding)
  * Generada desde tenant.setup.json
  */
 const uiConfig = {
+// ... existing ui config ...
+// I will just reuse the block below 
     gymName: "${setup.branding.gymName}",
     gymTagline: "${setup.branding.gymTagline}",
     logo: "${setup.branding.logoPath}",
@@ -123,6 +151,8 @@ export const appConfig = {
     ...uiConfig,
     ui: uiConfig,
     product: productConfig,
+    auth: authConfig,
+    email: emailConfig,
     __TEMPLATE_NOT_CONFIGURED__: false 
 } as const;
 

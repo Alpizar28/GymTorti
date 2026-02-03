@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ClienteForm } from "./ClienteForm";
+import { ConfirmDialog } from "./ConfirmDialog";
 import type { Cliente, ClienteFormData } from "../types";
 import { getPrimaryGradient, themeColors } from "@/config/app.config";
 
@@ -31,6 +32,7 @@ export function ClientesTab({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCliente, setEditingCliente] = useState<Cliente | null>(null);
   const [filter, setFilter] = useState<"todos" | "activos" | "vencidos" | "por-vencer">("todos");
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const handleAddCliente = async (cliente: ClienteFormData) => {
     await onCreateCliente(cliente);
@@ -44,9 +46,14 @@ export function ClientesTab({
     setDialogOpen(false);
   };
 
-  const handleDeleteCliente = async (id: string) => {
-    if (confirm("¿Estás seguro de eliminar este cliente? Esta acción no se puede deshacer.")) {
-      await onDeleteCliente(id);
+  const handleDeleteClick = (id: string) => {
+    setDeleteId(id);
+  };
+
+  const confirmDelete = async () => {
+    if (deleteId) {
+      await onDeleteCliente(deleteId);
+      setDeleteId(null);
     }
   };
 
@@ -253,8 +260,7 @@ export function ClientesTab({
                         <p className="font-semibold text-foreground">
                           {cliente.nombre} {cliente.apellido}
                         </p>
-                        <p className="text-sm text-muted">ID: {cliente.id}</p>
-                        <p className="text-sm text-muted">Cedula: {cliente.cedula || "--"}</p>
+                        <p className="text-sm text-muted">{cliente.cedula || "Sin cédula"}</p>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -305,7 +311,7 @@ export function ClientesTab({
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleDeleteCliente(cliente.id)}
+                          onClick={() => handleDeleteClick(cliente.id)}
                           className="group relative rounded-xl text-red-600 hover:bg-red-50 hover:text-red-700"
                           aria-label="Eliminar cliente"
                         >
@@ -324,6 +330,17 @@ export function ClientesTab({
         </CardContent>
       </Card>
 
+
+
+      <ConfirmDialog
+        open={deleteId !== null}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+        title="¿Eliminar cliente?"
+        description="¿Estás seguro de eliminar este cliente? Esta acción no se puede deshacer y se perderán todos los datos asociados."
+        onConfirm={confirmDelete}
+        confirmText="Eliminar"
+        variant="destructive"
+      />
     </>
   );
 }

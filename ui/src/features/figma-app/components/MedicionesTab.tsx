@@ -11,7 +11,9 @@ import { apiDownload } from "@/lib/api";
 import { MedicionDetail } from "./MedicionDetail";
 import { MedicionForm } from "./MedicionForm";
 import { MedicionesReporteDialog } from "./MedicionesReporteDialog";
+import { ConfirmDialog } from "./ConfirmDialog";
 import type { Cliente, Medicion } from "../types";
+import { appConfig } from "@/config/app.config";
 
 interface MedicionesTabProps {
   mediciones: Medicion[];
@@ -28,15 +30,21 @@ export function MedicionesTab({ mediciones, clientes, onCreateMedicion, onDelete
   const [reporteCliente, setReporteCliente] = useState<Cliente | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const handleAddMedicion = async (medicion: Omit<Medicion, "id">) => {
     await onCreateMedicion(medicion);
     setDialogOpen(false);
   };
 
-  const handleDeleteMedicion = async (id: string) => {
-    if (confirm("Estas seguro de eliminar esta medicion?")) {
-      await onDeleteMedicion(id);
+  const handleDeleteClick = (id: string) => {
+    setDeleteId(id);
+  };
+
+  const confirmDelete = async () => {
+    if (deleteId) {
+      await onDeleteMedicion(deleteId);
+      setDeleteId(null);
     }
   };
 
@@ -71,7 +79,7 @@ export function MedicionesTab({ mediciones, clientes, onCreateMedicion, onDelete
   const filteredClientes = normalizedQuery
     ? clientes.filter((cliente) => {
       const nombre = `${cliente.nombre} ${cliente.apellido}`.toLowerCase();
-      return nombre.includes(normalizedQuery) || cliente.email?.toLowerCase().includes(normalizedQuery) || cliente.telefono?.includes(normalizedQuery);
+      return nombre.includes(normalizedQuery) || cliente.email?.toLowerCase().includes(normalizedQuery) || cliente.telefono?.includes(normalizedQuery) || (cliente.cedula && cliente.cedula.includes(normalizedQuery));
     })
     : clientes;
 
@@ -137,7 +145,8 @@ export function MedicionesTab({ mediciones, clientes, onCreateMedicion, onDelete
     }
   };
 
-  const getPrimaryGradient = () => "linear-gradient(to right, #ff5e62, #ff9966)";
+  const getPrimaryGradient = () => `linear-gradient(to right, ${appConfig.ui.theme.primary.from}, ${appConfig.ui.theme.primary.to})`;
+  const primaryColor = appConfig.ui.theme.primary.solid;
 
   return (
     <>
@@ -230,7 +239,8 @@ export function MedicionesTab({ mediciones, clientes, onCreateMedicion, onDelete
                             variant="ghost"
                             size="sm"
                             onClick={() => handleOpenReporte(group.cliente)}
-                            className="rounded-xl text-[#ff5e62] hover:bg-surface-hover"
+                            className="rounded-xl hover:bg-surface-hover"
+                            style={{ color: primaryColor }}
                           >
                             <FileText className="h-4 w-4" />
                           </Button>
@@ -239,7 +249,8 @@ export function MedicionesTab({ mediciones, clientes, onCreateMedicion, onDelete
                             variant="ghost"
                             size="sm"
                             onClick={() => handleDownloadClienteReport(group.cliente.id)}
-                            className="rounded-xl text-[#ff5e62] hover:bg-surface-hover"
+                            className="rounded-xl hover:bg-surface-hover"
+                            style={{ color: primaryColor }}
                           >
                             <Download className="h-4 w-4" />
                           </Button>
@@ -299,14 +310,15 @@ export function MedicionesTab({ mediciones, clientes, onCreateMedicion, onDelete
                                           variant="ghost"
                                           size="sm"
                                           onClick={() => handleViewDetail(medicion)}
-                                          className="rounded-xl text-[#ff5e62] hover:bg-surface-hover"
+                                          className="rounded-xl hover:bg-surface-hover"
+                                          style={{ color: primaryColor }}
                                         >
                                           <Eye className="h-4 w-4" />
                                         </Button>
                                         <Button
                                           variant="ghost"
                                           size="sm"
-                                          onClick={() => handleDeleteMedicion(medicion.id)}
+                                          onClick={() => handleDeleteClick(medicion.id)}
                                           className="rounded-xl text-red-600 hover:bg-surface-hover"
                                         >
                                           <Trash2 className="h-4 w-4" />
@@ -348,6 +360,16 @@ export function MedicionesTab({ mediciones, clientes, onCreateMedicion, onDelete
           mediciones={mediciones.filter((m) => m.clienteId === reporteCliente.id)}
         />
       )}
+
+      <ConfirmDialog
+        open={deleteId !== null}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+        title="¿Eliminar medición?"
+        description="Esta acción eliminará el registro de forma permanente. ¿Deseas continuar?"
+        onConfirm={confirmDelete}
+        confirmText="Eliminar"
+        variant="destructive"
+      />
     </>
   );
 }

@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PagoForm } from "./PagoForm";
+import { ConfirmDialog } from "./ConfirmDialog";
 import type { Cliente, Pago } from "../types";
 import { getPrimaryGradient, appConfig } from "@/config/app.config";
 
@@ -71,15 +72,21 @@ export function PagosTab({ pagos, onCreatePago, onDeletePago, clientes }: PagosT
   const [periodPreset, setPeriodPreset] = useState<PeriodPreset>(resolvePreset(DEFAULT_PERIOD_DAYS));
   const [customDays, setCustomDays] = useState(String(DEFAULT_PERIOD_DAYS));
   const [periodReady, setPeriodReady] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const handleAddPago = async (pago: Omit<Pago, "id">) => {
     await onCreatePago(pago);
     setDialogOpen(false);
   };
 
-  const handleDeletePago = async (id: string) => {
-    if (confirm("¿Está seguro de eliminar este pago?")) {
-      await onDeletePago(id);
+  const handleDeleteClick = (id: string) => {
+    setDeleteId(id);
+  };
+
+  const confirmDelete = async () => {
+    if (deleteId) {
+      await onDeletePago(deleteId);
+      setDeleteId(null);
     }
   };
 
@@ -438,7 +445,7 @@ export function PagosTab({ pagos, onCreatePago, onDeletePago, clientes }: PagosT
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleDeletePago(pago.id)}
+                            onClick={() => handleDeleteClick(pago.id)}
                             className="rounded-xl text-red-600 hover:bg-red-50 hover:text-red-700"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -487,6 +494,16 @@ export function PagosTab({ pagos, onCreatePago, onDeletePago, clientes }: PagosT
           )}
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={deleteId !== null}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+        title="¿Eliminar pago?"
+        description="Esta acción eliminará el registro de pago permanentemente. ¿Está seguro?"
+        onConfirm={confirmDelete}
+        confirmText="Eliminar"
+        variant="destructive"
+      />
     </div>
   );
 }

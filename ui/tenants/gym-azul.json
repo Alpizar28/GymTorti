@@ -1,0 +1,72 @@
+{
+  "tenant": {
+    "id": "gym-azul-001",
+    "displayName": "Gym Azul Demo",
+    "country": "US",
+    "timezone": "America/Costa_Rica",
+    "locale": "en-US",
+    "supabaseProjectRef": "tu-proyecto-azul"
+  },
+  "branding": {
+    "gymName": "Gym Azul",
+    "gymTagline": "Train Cool",
+    "logoPath": "/logos/gym-azul.png",
+    "uiModeDefault": "dark",
+    "colors": {
+      "primaryFrom": "#3b82f6",
+      "primaryTo": "#1d4ed8",
+      "primarySolid": "#2563eb",
+      "primaryHover": "#1e40af",
+      "primaryActive": "#1e3a8a",
+      "primaryFocus": "rgba(59, 130, 246, 0.5)"
+    }
+  },
+  "product": {
+    "currency": {
+      "code": "USD",
+      "symbol": "$",
+      "decimals": 2,
+      "format": "symbol_before"
+    },
+    "units": {
+      "weight": "kg",
+      "length": "cm"
+    },
+    "rules": {
+      "warningThresholdDays": 7,
+      "graceDays": 0,
+      "allowBackdatedPayments": false,
+      "allowFutureStartDate": true
+    },
+    "plans": {
+      "DAILY": {
+        "enabled": true,
+        "price": 10.00,
+        "notes": "Day Pass"
+      },
+      "MONTHLY": {
+        "enabled": true,
+        "price": 50.00,
+        "notes": "Standard Membership"
+      }
+    }
+  },
+  "auth": {
+    "whitelist": [
+      "jpablo2807xd@gmail.com"
+    ]
+  },
+  "email": {
+    "enabled": true,
+    "fromName": "Template Gym",
+    "fromEmail": "jpablo2807xd@gmail.com",
+    "reminders": {
+      "daysBefore": [
+        3,
+        1
+      ],
+      "sendOnDueDate": true,
+      "sendAfterDueDate": false
+    }
+  }
+}
