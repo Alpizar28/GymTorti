@@ -61,7 +61,7 @@ import { ProductConfig } from "./product.types";
  * Generada desde tenant.setup.json
  */
 const authConfig = {
-    whitelist: ${JSON.stringify(setup.auth?.whitelist || [])},
+    whitelist: ${JSON.stringify(setup.auth?.whitelist || [])} as string[],
 };
 
 /**

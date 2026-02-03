@@ -21,6 +21,13 @@
       "primaryFocus": "#ef4444"
     }
   },
+  "auth": {
+    "whitelist": [
+      "jpablo2807xd@gmail.com",
+      "ivannia0903@gmail.com",
+      "garrokembly@gmail.com"
+    ]
+  },
   "product": {
     "currency": {
       "code": "USD",
