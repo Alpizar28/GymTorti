@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import * as XLSX from "xlsx";
 import { BarChart3, Download, Plus, Trash2 } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Badge } from "@/components/ui/badge";
@@ -237,17 +236,18 @@ export function PagosTab({ pagos, onCreatePago, onDeletePago, clientes }: PagosT
       ["Total", "", "", "", colones.format(totalAmount)],
     ];
 
-    const worksheet = XLSX.utils.aoa_to_sheet(rows);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Movimientos");
+    // Convertir a CSV
+    const csvContent = rows
+      .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
 
     const endDate = new Date();
     const startDate = new Date(endDate);
     startDate.setDate(endDate.getDate() - (periodDays - 1));
-    const fileName = `reporte_pagos_periodo_${isoDateFromDate(startDate)}_a_${isoDateFromDate(endDate)}.xlsx`;
-    const output = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-    const blob = new Blob([output], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    const fileName = `reporte_pagos_periodo_${isoDateFromDate(startDate)}_a_${isoDateFromDate(endDate)}.csv`;
+
+    const blob = new Blob([csvContent], {
+      type: "text/csv;charset=utf-8;",
     });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
