@@ -59,7 +59,7 @@
   "email": {
     "enabled": true,
     "fromName": "Template Gym",
-    "fromEmail": "no-reply@jokem.tech",
+    "fromEmail": "onboarding@resend.dev",
     "reminders": {
       "daysBefore": [
         3,
