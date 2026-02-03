@@ -12,7 +12,7 @@ const supabaseAdmin = createClient(
 
 export const dynamic = 'force-dynamic'; // Asegurar que no se cachee
 
-export async function GET(request: Request) {
+export async function GET(_request: Request) {
     // Verificación básica de seguridad (DESACTIVADA TEMPORALMENTE PARA PRUEBAS)
     // const authHeader = request.headers.get('authorization');
     // if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -55,6 +55,7 @@ export async function GET(request: Request) {
         const results = [];
 
         for (const subscription of (subscriptions || [])) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const clientData = subscription.clients as any;
             const client = Array.isArray(clientData) ? clientData[0] : clientData;
             if (!client || !client.email) continue;
