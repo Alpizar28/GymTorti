@@ -40,11 +40,11 @@ function validateEnvironment() {
  * Verifica la autenticación del endpoint
  */
 function verifyAuth(request: Request) {
-    // Verificación básica de seguridad (DESACTIVADA TEMPORALMENTE PARA PRUEBAS)
-    // const authHeader = request.headers.get('authorization');
-    // if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    //   throw new UnauthorizedError('Invalid or missing authorization');
-    // }
+    // Verificación de seguridad activada
+    const authHeader = request.headers.get('authorization');
+    if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+        throw new UnauthorizedError('Invalid or missing authorization');
+    }
 }
 
 /**
