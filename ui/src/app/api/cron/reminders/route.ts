@@ -42,6 +42,14 @@ function validateEnvironment() {
 function verifyAuth(request: Request) {
     // Verificación de seguridad activada
     const authHeader = request.headers.get('authorization');
+
+    // En producción, es OBLIGATORIO tener el secreto configurado
+    if (process.env.NODE_ENV === 'production' && !process.env.CRON_SECRET) {
+        console.error("CRITICAL: CRON_SECRET is not defined in production environment variables.");
+        throw new UnauthorizedError('Server Configuration Error: Missing CRON_SECRET');
+    }
+
+    // Si existe secreto (dev o prod), validarlo
     if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
         throw new UnauthorizedError('Invalid or missing authorization');
     }
