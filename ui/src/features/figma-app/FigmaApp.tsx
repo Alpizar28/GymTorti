@@ -584,6 +584,28 @@ export function FigmaApp({ defaultTab }: { defaultTab?: "clientes" | "pagos" | "
   async function handleCreatePago(pago: Omit<Pago, "id">) {
     setError(null);
     try {
+
+      // 1. Create Subscription First to trigger 'active' status
+      const durationDays = pago.tipoPago === "diario" ? 1 : 30;
+      const startDate = new Date(pago.fecha);
+      const endDate = new Date(startDate);
+      endDate.setDate(startDate.getDate() + durationDays);
+
+      const { data: subData, error: subError } = await supabase
+        .from("subscriptions")
+        .insert({
+          client_id: pago.clienteId,
+          start_date: startDate.toISOString(),
+          end_date: endDate.toISOString(),
+          active: true,
+          payment_status: 'paid'
+        })
+        .select()
+        .single();
+
+      if (subError) throw subError;
+
+      // 2. Create Payment linked to Subscription
       // Encode paymentType in notes as legacy logic expects
       const notesWithPaymentType = `tipoPago: ${pago.tipoPago} ${pago.referencia || ""}`.trim();
 
@@ -591,15 +613,20 @@ export function FigmaApp({ defaultTab }: { defaultTab?: "clientes" | "pagos" | "
         .from("payments")
         .insert({
           client_id: pago.clienteId,
+          subscription_id: subData.id, // Linked!
           amount: pago.monto,
           currency: appConfig.product.currency.code,
           method: paymentMethodFromUi(pago.metodoPago),
-          date: pago.fecha, // Column is 'date' (TIMESTAMPTZ)
+          date: pago.fecha,
           reference: pago.referencia || null,
           notes: notesWithPaymentType,
         });
 
-      if (error) throw error;
+      if (error) {
+        // Rollback subscription if payment fails (best effort)
+        await supabase.from("subscriptions").delete().eq("id", subData.id);
+        throw error;
+      }
 
       // Email Notification Integration
       const cliente = clientesAll.find(c => c.id === pago.clienteId);
@@ -638,12 +665,33 @@ export function FigmaApp({ defaultTab }: { defaultTab?: "clientes" | "pagos" | "
   async function handleDeletePago(pagoId: string) {
     setError(null);
     try {
+      // 1. Fetch payment to find linked subscription
+      const { data: paymentData, error: fetchError } = await supabase
+        .from("payments")
+        .select("subscription_id")
+        .eq("id", pagoId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // 2. Delete payment
       const { error } = await supabase
         .from("payments")
         .delete()
         .eq("id", pagoId);
 
       if (error) throw error;
+
+      // 3. Delete linked subscription if exists (This triggers client status update to inactive!)
+      if (paymentData?.subscription_id) {
+        const { error: subError } = await supabase
+          .from("subscriptions")
+          .delete()
+          .eq("id", paymentData.subscription_id);
+
+        if (subError) console.warn("Could not delete linked subscription:", subError);
+      }
+
       await loadAll();
     } catch (err) {
       console.error("Error deleting payment:", err);
