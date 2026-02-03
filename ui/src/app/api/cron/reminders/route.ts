@@ -119,6 +119,9 @@ export async function GET(_request: Request) {
                     success: emailResult.success,
                     error: emailResult.error
                 });
+
+                // Delay para evitar rate limit (Resend: 2 emails/segundo en plan gratuito)
+                await new Promise(resolve => setTimeout(resolve, 600));
             }
         }
 

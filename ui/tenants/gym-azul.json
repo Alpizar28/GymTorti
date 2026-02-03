@@ -59,7 +59,7 @@
   "email": {
     "enabled": true,
     "fromName": "Template Gym",
-    "fromEmail": "jpablo2807xd@gmail.com",
+    "fromEmail": "onboarding@resend.dev",
     "reminders": {
       "daysBefore": [
         3,
